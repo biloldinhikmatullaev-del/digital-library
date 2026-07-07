@@ -8,6 +8,7 @@ export default function Profile() {
   const { user, logout, isMock, updateUser } = useAuth();
   const [downloads, setDownloads] = useState([]);
   const [quizResults, setQuizResults] = useState([]);
+  const [reservations, setReservations] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(user?.displayName || "");
   const navigate = useNavigate();
@@ -45,7 +46,37 @@ export default function Profile() {
         console.error("Error loading quiz results", e);
       }
     }
+
+    // Load reservations
+    const savedRes = localStorage.getItem("lumina_user_reservations");
+    if (savedRes) {
+      try {
+        setReservations(JSON.parse(savedRes));
+      } catch (e) {
+        console.error("Error loading reservations", e);
+      }
+    }
   }, []);
+
+  const handleCancelReservation = (productId) => {
+    const updated = reservations.filter(res => res.id !== productId);
+    setReservations(updated);
+    localStorage.setItem("lumina_user_reservations", JSON.stringify(updated));
+
+    // Restore stock in localStorage products list
+    const localData = localStorage.getItem("lumina_custom_products");
+    if (localData) {
+      const parsed = JSON.parse(localData);
+      const updatedProducts = parsed.map(p => {
+        if (p.id === productId) {
+          return { ...p, stock: (p.stock || 100) + 1 };
+        }
+        return p;
+      });
+      localStorage.setItem("lumina_custom_products", JSON.stringify(updatedProducts));
+    }
+    alert("Бронирование успешно отменено!");
+  };
 
   const handleLogout = async () => {
     try {
@@ -298,6 +329,68 @@ export default function Profile() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Active Reservations */}
+          <div className="profile-section-card glass" style={{ padding: '40px', borderRadius: 'var(--radius-lg)' }}>
+            <h3 className="section-title-profile" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>📅 Мои активные бронирования</span>
+            </h3>
+
+            {reservations.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: '20px 0' }}>У вас нет активных бронирований книг.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px' }}>
+                {reservations.map((res) => (
+                  <div key={res.id} className="glass" style={{
+                    padding: '20px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-card)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '20px',
+                    flexWrap: 'wrap'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <img src={res.image} alt={res.name} style={{ width: '48px', height: '64px', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
+                      <div>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>{res.name}</h4>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>Автор: {res.author}</p>
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '6px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px', color: 'var(--text-muted)' }}>
+                            {res.method}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', background: 'rgba(255,184,0,0.1)', padding: '2px 8px', borderRadius: '10px', color: '#ffb800', fontWeight: 600 }}>
+                            До {res.until}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <Link to={`/product/${res.id}`} className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                        Открыть
+                      </Link>
+                      <button
+                        onClick={() => handleCancelReservation(res.id)}
+                        className="btn-secondary"
+                        style={{
+                          padding: '8px 16px',
+                          fontSize: '0.85rem',
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          color: '#ef4444'
+                        }}
+                      >
+                        Отменить бронь
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Downloads history */}

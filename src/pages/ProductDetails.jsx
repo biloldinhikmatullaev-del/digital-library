@@ -298,6 +298,92 @@ export default function ProductDetails() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  // Booking States
+  const [isReserved, setIsReserved] = useState(false);
+  const [reservedUntil, setReservedUntil] = useState("");
+  const [reservationModalOpen, setReservationModalOpen] = useState(false);
+  const [reserveDays, setReserveDays] = useState("14");
+  const [reserveMethod, setReserveMethod] = useState("digital");
+
+  useEffect(() => {
+    if (!id) return;
+    const savedReservations = JSON.parse(localStorage.getItem("lumina_user_reservations") || "[]");
+    const existing = savedReservations.find(res => res.id === id);
+    if (existing) {
+      setIsReserved(true);
+      setReservedUntil(existing.until);
+    } else {
+      setIsReserved(false);
+      setReservedUntil("");
+    }
+  }, [id]);
+
+  const handleConfirmReservation = () => {
+    const today = new Date();
+    const untilDate = new Date();
+    untilDate.setDate(today.getDate() + Number(reserveDays));
+    const untilStr = untilDate.toLocaleDateString("ru-RU", { year: "numeric", month: "long", day: "numeric" });
+
+    const newRes = {
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      author: product.author,
+      category: product.category,
+      method: reserveMethod === "digital" ? "Цифровой доступ" : "Читальный зал",
+      until: untilStr,
+      date: today.toLocaleDateString("ru-RU")
+    };
+
+    const savedReservations = JSON.parse(localStorage.getItem("lumina_user_reservations") || "[]");
+    savedReservations.unshift(newRes);
+    localStorage.setItem("lumina_user_reservations", JSON.stringify(savedReservations));
+
+    setIsReserved(true);
+    setReservedUntil(untilStr);
+    setReservationModalOpen(false);
+
+    // Update stock if possible
+    if (product.stock > 0) {
+      const currentStock = product.stock - 1;
+      const localCustom = JSON.parse(localStorage.getItem("lumina_custom_products") || "[]");
+      const updatedCustom = localCustom.map(p => {
+        if (p.id === product.id) {
+          return { ...p, stock: currentStock };
+        }
+        return p;
+      });
+      if (updatedCustom.length > 0) {
+        localStorage.setItem("lumina_custom_products", JSON.stringify(updatedCustom));
+      }
+    }
+
+    alert(`Книга "${product.name}" успешно забронирована до ${untilStr}! Вы можете управлять бронью в Личном кабинете.`);
+  };
+
+  const handleCancelReservation = () => {
+    const savedReservations = JSON.parse(localStorage.getItem("lumina_user_reservations") || "[]");
+    const filtered = savedReservations.filter(res => res.id !== product.id);
+    localStorage.setItem("lumina_user_reservations", JSON.stringify(filtered));
+
+    setIsReserved(false);
+    setReservedUntil("");
+
+    // Update stock back
+    const localCustom = JSON.parse(localStorage.getItem("lumina_custom_products") || "[]");
+    const updatedCustom = localCustom.map(p => {
+      if (p.id === product.id) {
+        return { ...p, stock: (p.stock || 100) + 1 };
+      }
+      return p;
+    });
+    if (updatedCustom.length > 0) {
+      localStorage.setItem("lumina_custom_products", JSON.stringify(updatedCustom));
+    }
+
+    alert(`Бронирование книги "${product.name}" отменено.`);
+  };
+
   useEffect(() => {
     if (!id) return;
     const saved = localStorage.getItem(`lumina_reviews_${id}`);
@@ -831,6 +917,26 @@ export default function ProductDetails() {
                     <BookOpen size={20} />
                     <span>Читать онлайн</span>
                   </button>
+                )}
+
+                {product.category !== "tests" && product.category !== "quizzes" && (
+                  isReserved ? (
+                    <button 
+                      className="btn-primary add-to-cart-big"
+                      onClick={handleCancelReservation}
+                      style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444' }}
+                    >
+                      📅 Забронировано до {reservedUntil} (Отменить)
+                    </button>
+                  ) : (
+                    <button 
+                      className="btn-primary add-to-cart-big"
+                      onClick={() => setReservationModalOpen(true)}
+                      style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--accent-secondary)' }}
+                    >
+                      📅 Забронировать копию
+                    </button>
+                  )
                 )}
               </>
             )}
@@ -1393,6 +1499,112 @@ export default function ProductDetails() {
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                 Прогресс: {Math.round((readerPage / getBookPages(product).length) * 100)}%
               </span>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Reservation Modal */}
+      {reservationModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0,0,0,0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <div className="glass" style={{
+            width: '90%',
+            maxWidth: '450px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '30px',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setReservationModalOpen(false)}
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                fontSize: '1.2rem'
+              }}
+            >
+              ✕
+            </button>
+
+            <h3 style={{
+              fontFamily: 'var(--font-accent)',
+              fontSize: '1.4rem',
+              fontWeight: 700,
+              marginBottom: '20px',
+              color: 'var(--accent-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              📅 Бронирование книги
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              Вы бронируете книгу: <strong>{product.name}</strong>.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Duration dropdown */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Срок бронирования</label>
+                <select
+                  className="input-field"
+                  value={reserveDays}
+                  onChange={(e) => setReserveDays(e.target.value)}
+                  style={{ background: 'var(--bg-dark)' }}
+                >
+                  <option value="7">7 дней</option>
+                  <option value="14">14 дней (Рекомендуется)</option>
+                  <option value="30">30 дней</option>
+                </select>
+              </div>
+
+              {/* Method radio */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Способ доступа</label>
+                <select
+                  className="input-field"
+                  value={reserveMethod}
+                  onChange={(e) => setReserveMethod(e.target.value)}
+                  style={{ background: 'var(--bg-dark)' }}
+                >
+                  <option value="digital">Цифровая аренда (выделенный слот)</option>
+                  <option value="physical">Физический заказ в читальный зал</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '30px' }}>
+              <button
+                className="btn-primary"
+                onClick={handleConfirmReservation}
+                style={{ flex: 1 }}
+              >
+                Подтвердить бронь
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={() => setReservationModalOpen(false)}
+                style={{ flex: 1 }}
+              >
+                Отмена
+              </button>
             </div>
           </div>
         </div>
