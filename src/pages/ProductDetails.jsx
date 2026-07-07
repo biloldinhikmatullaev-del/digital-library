@@ -331,6 +331,21 @@ export default function ProductDetails() {
 
   useEffect(() => {
     const fetchProduct = async () => {
+      const localData = localStorage.getItem("lumina_custom_products");
+      if (localData) {
+        try {
+          const merged = JSON.parse(localData);
+          const found = merged.find((p) => p.id === id);
+          if (found) {
+            setProduct(found);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.error("Error reading custom products from localStorage in ProductDetails", e);
+        }
+      }
+
       try {
         const res = await fetch("/.netlify/functions/products");
         if (res.ok) {

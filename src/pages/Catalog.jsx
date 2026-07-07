@@ -47,6 +47,17 @@ export default function Catalog() {
 
   useEffect(() => {
     const fetchProducts = async () => {
+      const localData = localStorage.getItem("lumina_custom_products");
+      if (localData) {
+        try {
+          setProducts(JSON.parse(localData));
+          setLoading(false);
+          return;
+        } catch (e) {
+          console.error("Error reading custom products from localStorage", e);
+        }
+      }
+
       try {
         const res = await fetch("/.netlify/functions/products");
         if (res.ok) {

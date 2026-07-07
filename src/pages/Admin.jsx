@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
-import { PlusCircle, Trash2, LayoutGrid, ShieldAlert } from "lucide-react";
+import { PlusCircle, Trash2, LayoutGrid, ShieldAlert, Edit } from "lucide-react";
 import "./Admin.css";
 
 export default function Admin() {
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
 
   // Form state
   const [newProduct, setNewProduct] = useState({
@@ -26,22 +27,39 @@ export default function Admin() {
 
   useEffect(() => {
     const fetchProducts = async () => {
+      const localData = localStorage.getItem("lumina_custom_products");
+      if (localData) {
+        try {
+          setProducts(JSON.parse(localData));
+          setLoading(false);
+          return;
+        } catch (e) {
+          console.error("Error reading custom products from localStorage in Admin", e);
+        }
+      }
+
       try {
         const res = await fetch("/.netlify/functions/products");
         if (res.ok) {
           const data = await res.json();
-          setProducts(data);
+          const merged = [...mockProducts];
+          data.forEach((item) => {
+            const idx = merged.findIndex((m) => m.id === item.id);
+            if (idx > -1) {
+              merged[idx] = item;
+            } else {
+              merged.push(item);
+            }
+          });
+          setProducts(merged);
+          localStorage.setItem("lumina_custom_products", JSON.stringify(merged));
         } else {
           throw new Error("Failed to fetch");
         }
       } catch (err) {
         console.warn("Using fallback catalog in Admin view");
-        const mockCatalog = [
-          { id: "b1", name: "Веб-технологии и программирование", author: "А. И. Сидоров", format: "PDF", category: "books", space: "educational" },
-          { id: "p1", name: "Презентация: Введение в React.js и SPA", author: "С. А. Козлов", format: "PPTX", category: "presentations", space: "educational" },
-          { id: "t1", name: "Тест: Основы JavaScript и ES6+", author: "Система тестирования", format: "Тест", category: "tests", space: "educational" }
-        ];
-        setProducts(mockCatalog);
+        setProducts(mockProducts);
+        localStorage.setItem("lumina_custom_products", JSON.stringify(mockProducts));
       } finally {
         setLoading(false);
       }
@@ -54,7 +72,6 @@ export default function Admin() {
     const { name, value } = e.target;
     setNewProduct((prev) => {
       const updated = { ...prev, [name]: value };
-      // If space changes, reset category to a valid default for that space
       if (name === "space") {
         if (value === "educational") updated.category = "books";
         else if (value === "corporate") updated.category = "instructions";
@@ -65,29 +82,72 @@ export default function Admin() {
     });
   };
 
+  const handleEditClick = (p) => {
+    setEditingId(p.id);
+    setNewProduct({
+      name: p.name,
+      author: p.author || "",
+      format: p.format,
+      size: p.size || "",
+      space: p.space,
+      category: p.category,
+      description: p.description || "",
+      specs: p.specs ? (Array.isArray(p.specs) ? p.specs.join(", ") : p.specs) : "",
+      stock: String(p.stock || 100)
+    });
+  };
+
   const handleAddProduct = (e) => {
     e.preventDefault();
-    const formattedProduct = {
-      id: "b-" + Math.random().toString(36).substring(2, 7),
-      name: newProduct.name,
-      author: newProduct.author || "Кафедра ИТ",
-      format: newProduct.format,
-      size: newProduct.size || "1.5 MB",
-      space: newProduct.space,
-      category: newProduct.category,
-      image: newProduct.category === "books" || newProduct.category === "fiction"
-        ? "/images/english_book_cover.png"
-        : newProduct.category === "audiobooks"
-          ? "/images/bulgakov_cover.png"
-          : "/images/web_book_cover.png",
-      description: newProduct.description || "Материал для самостоятельной работы.",
-      specs: newProduct.specs ? newProduct.specs.split(",").map(s => s.trim()) : ["Рекомендуется к изучению"],
-      stock: 100,
-      rating: 5.0
-    };
+    let updatedList;
+    if (editingId) {
+      // Edit mode
+      updatedList = products.map((p) => {
+        if (p.id === editingId) {
+          return {
+            ...p,
+            name: newProduct.name,
+            author: newProduct.author || "Кафедра ИТ",
+            format: newProduct.format,
+            size: newProduct.size || "1.5 MB",
+            space: newProduct.space,
+            category: newProduct.category,
+            description: newProduct.description || "Материал для самостоятельной работы.",
+            specs: newProduct.specs ? newProduct.specs.split(",").map(s => s.trim()) : ["Рекомендуется к изучению"]
+          };
+        }
+        return p;
+      });
+      setProducts(updatedList);
+      setMessage(`Материал "${newProduct.name}" успешно обновлен!`);
+      setEditingId(null);
+    } else {
+      // Add mode
+      const formattedProduct = {
+        id: "b-" + Math.random().toString(36).substring(2, 7),
+        name: newProduct.name,
+        author: newProduct.author || "Кафедра ИТ",
+        format: newProduct.format,
+        size: newProduct.size || "1.5 MB",
+        space: newProduct.space,
+        category: newProduct.category,
+        image: newProduct.category === "books" || newProduct.category === "fiction"
+          ? "/images/english_book_cover.png"
+          : newProduct.category === "audiobooks"
+            ? "/images/bulgakov_cover.png"
+            : "/images/web_book_cover.png",
+        description: newProduct.description || "Материал для самостоятельной работы.",
+        specs: newProduct.specs ? newProduct.specs.split(",").map(s => s.trim()) : ["Рекомендуется к изучению"],
+        stock: 100,
+        rating: 5.0
+      };
 
-    setProducts((prev) => [formattedProduct, ...prev]);
-    setMessage(`Материал "${formattedProduct.name}" успешно добавлен в базу!`);
+      updatedList = [formattedProduct, ...products];
+      setProducts(updatedList);
+      setMessage(`Материал "${formattedProduct.name}" успешно добавлен в базу!`);
+    }
+
+    localStorage.setItem("lumina_custom_products", JSON.stringify(updatedList));
     
     // Clear form
     setNewProduct({
@@ -106,7 +166,9 @@ export default function Admin() {
   };
 
   const handleDeleteProduct = (id, name) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    const updated = products.filter((p) => p.id !== id);
+    setProducts(updated);
+    localStorage.setItem("lumina_custom_products", JSON.stringify(updated));
     setMessage(`Материал "${name}" удален из каталога.`);
     setTimeout(() => setMessage(""), 4000);
   };
@@ -169,7 +231,7 @@ export default function Admin() {
         {/* Create Product Form */}
         <section className="admin-form-section glass">
           <h3 className="admin-panel-title">
-            <PlusCircle size={20} /> Добавить ресурс
+            <PlusCircle size={20} /> {editingId ? "Редактировать ресурс" : "Добавить ресурс"}
           </h3>
           <form className="admin-form" onSubmit={handleAddProduct}>
             <div className="form-group">
@@ -325,9 +387,34 @@ export default function Admin() {
               />
             </div>
 
-            <button type="submit" className="btn-primary admin-submit-btn">
-              Опубликовать ресурс
-            </button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button type="submit" className="btn-primary admin-submit-btn" style={{ flex: 1 }}>
+                {editingId ? "Сохранить изменения" : "Опубликовать ресурс"}
+              </button>
+              {editingId && (
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  onClick={() => {
+                    setEditingId(null);
+                    setNewProduct({
+                      name: "",
+                      author: "",
+                      format: "PDF",
+                      size: "",
+                      space: "educational",
+                      category: "books",
+                      description: "",
+                      specs: "",
+                      stock: "100"
+                    });
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  Отмена
+                </button>
+              )}
+            </div>
           </form>
         </section>
 
@@ -360,11 +447,35 @@ export default function Admin() {
                       <td className="table-name" style={{ fontSize: '0.85rem' }}>{p.name}</td>
                       <td style={{ textTransform: 'uppercase', fontSize: '0.8rem' }}>{p.format}</td>
                       <td style={{ fontSize: '0.8rem' }}>{getCategoryLabel(p.category)}</td>
-                      <td>
+                      <td style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          className="table-edit-btn"
+                          onClick={() => handleEditClick(p)}
+                          title="Редактировать ресурс"
+                          style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--accent-primary)',
+                            padding: '6px',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <Edit size={16} />
+                        </button>
                         <button
                           className="table-delete-btn"
                           onClick={() => handleDeleteProduct(p.id, p.name)}
                           title="Удалить из каталога"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
                         >
                           <Trash2 size={16} />
                         </button>

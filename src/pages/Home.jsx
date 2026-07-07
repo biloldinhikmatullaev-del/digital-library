@@ -13,6 +13,31 @@ export default function Home() {
 
   useEffect(() => {
     const fetchProducts = async () => {
+      const localData = localStorage.getItem("lumina_custom_products");
+      if (localData) {
+        try {
+          const merged = JSON.parse(localData);
+          const featured = [
+            merged.find(p => p.id === "b_eng"),
+            merged.find(p => p.id === "b_rus"),
+            merged.find(p => p.id === "b_math"),
+            merged.find(p => p.id === "b_chio"),
+            merged.find(p => p.id === "b_hist"),
+            merged.find(p => p.id === "b_bio"),
+            merged.find(p => p.id === "lit_quiz_1"),
+            merged.find(p => p.id === "b1")
+          ].filter(Boolean);
+          setFeaturedProducts(featured.length > 0 ? featured : merged.slice(0, 6));
+
+          const books = merged.filter(p => p.space === "public" && (p.category === "fiction" || p.category === "audiobooks" || p.category === "ebooks")).slice(0, 4);
+          setPopularBooks(books);
+          setLoading(false);
+          return;
+        } catch (e) {
+          console.error("Error reading custom products from localStorage in Home", e);
+        }
+      }
+
       try {
         const res = await fetch("/.netlify/functions/products");
         if (res.ok) {
