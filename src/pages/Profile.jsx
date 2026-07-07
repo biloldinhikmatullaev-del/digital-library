@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { User, LogOut, Package, Calendar, CheckCircle, Award, Download, FileText, Trophy, Lock } from "lucide-react";
+import { User, LogOut, Package, Calendar, CheckCircle, Award, Download, FileText, Trophy, Lock, Users, Search } from "lucide-react";
 import "./Profile.css";
 
 export default function Profile() {
@@ -12,6 +12,10 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(user?.displayName || "");
   const navigate = useNavigate();
+
+  // Friend / Community states
+  const [friendsIds, setFriendsIds] = useState([]);
+  const [readersSearch, setReadersSearch] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -56,7 +60,30 @@ export default function Profile() {
         console.error("Error loading reservations", e);
       }
     }
+
+    // Load friends
+    const savedFriends = localStorage.getItem("lumina_user_friends");
+    if (savedFriends) {
+      try {
+        setFriendsIds(JSON.parse(savedFriends));
+      } catch (e) {
+        console.error("Error loading friends list", e);
+      }
+    }
   }, []);
+
+  const toggleFriend = (readerId) => {
+    let nextFriends;
+    if (friendsIds.includes(readerId)) {
+      nextFriends = friendsIds.filter(fid => fid !== readerId);
+      alert("Пользователь удален из списка друзей.");
+    } else {
+      nextFriends = [...friendsIds, readerId];
+      alert("Пользователь добавлен в друзья!");
+    }
+    setFriendsIds(nextFriends);
+    localStorage.setItem("lumina_user_friends", JSON.stringify(nextFriends));
+  };
 
   const handleCancelReservation = (productId) => {
     const updated = reservations.filter(res => res.id !== productId);
@@ -391,6 +418,181 @@ export default function Profile() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Readers Search & Community */}
+          <div className="profile-section-card glass" style={{ padding: '40px', borderRadius: 'var(--radius-lg)' }}>
+            <h3 className="section-title-profile" style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px' }}>
+              <Users size={20} style={{ color: 'var(--accent-primary)', filter: 'drop-shadow(0 0 10px var(--accent-glow))' }} /> Сообщество читателей и поиск друзей
+            </h3>
+
+            {/* Search Input */}
+            <div style={{ marginTop: '20px', position: 'relative' }}>
+              <div style={{
+                position: 'absolute',
+                left: '16px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                <Search size={16} />
+              </div>
+              <input
+                type="text"
+                placeholder="Поиск читателей по имени (например: Александр, Мария, Елена)..."
+                value={readersSearch}
+                onChange={(e) => setReadersSearch(e.target.value)}
+                className="input-field"
+                style={{ paddingLeft: '44px', width: '100%' }}
+              />
+            </div>
+
+            {/* Search results or suggestions */}
+            {readersSearch.trim() && (
+              <div style={{ marginTop: '20px' }}>
+                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '12px' }}>Результаты поиска:</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {[
+                    { id: "u1", name: "Александр Волков", booksRead: 14, quizzesPassed: 5, badgesCount: 4 },
+                    { id: "u2", name: "Елена Смирнова", booksRead: 8, quizzesPassed: 2, badgesCount: 2 },
+                    { id: "u3", name: "Дмитрий Кузнецов", booksRead: 23, quizzesPassed: 8, badgesCount: 5 },
+                    { id: "u4", name: "Ольга Морозова", booksRead: 4, quizzesPassed: 1, badgesCount: 1 },
+                    { id: "u5", name: "Алексей Новиков", booksRead: 11, quizzesPassed: 3, badgesCount: 3 },
+                    { id: "u6", name: "Мария Соколова", booksRead: 17, quizzesPassed: 6, badgesCount: 4 }
+                  ].filter(reader => reader.name.toLowerCase().includes(readersSearch.toLowerCase()))
+                   .map(reader => (
+                    <div key={reader.id} className="glass" style={{
+                      padding: '16px 20px',
+                      borderRadius: 'var(--radius-md)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid var(--border-color)',
+                      flexWrap: 'wrap',
+                      gap: '16px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, var(--accent-secondary), #3b82f6)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 700,
+                          color: '#fff',
+                          fontSize: '0.9rem'
+                        }}>
+                          {reader.name[0]}
+                        </div>
+                        <div>
+                          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>{reader.name}</span>
+                          <div style={{ display: 'flex', gap: '10px', marginTop: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            <span>📚 Изучено: {reader.booksRead}</span>
+                            <span>⚡ Тестов: {reader.quizzesPassed}</span>
+                            <span>🏆 Значков: {reader.badgesCount}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => toggleFriend(reader.id)}
+                        className="btn-secondary"
+                        style={{
+                          padding: '8px 16px',
+                          fontSize: '0.85rem',
+                          background: friendsIds.includes(reader.id) ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.03)',
+                          border: friendsIds.includes(reader.id) ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-color)',
+                          color: friendsIds.includes(reader.id) ? '#10b981' : 'var(--text-primary)'
+                        }}
+                      >
+                        {friendsIds.includes(reader.id) ? "✓ В друзьях" : "+ Добавить"}
+                      </button>
+                    </div>
+                  ))}
+                  {[
+                    { id: "u1", name: "Александр Волков", booksRead: 14, quizzesPassed: 5, badgesCount: 4 },
+                    { id: "u2", name: "Елена Смирнова", booksRead: 8, quizzesPassed: 2, badgesCount: 2 },
+                    { id: "u3", name: "Дмитрий Кузнецов", booksRead: 23, quizzesPassed: 8, badgesCount: 5 },
+                    { id: "u4", name: "Ольга Морозова", booksRead: 4, quizzesPassed: 1, badgesCount: 1 },
+                    { id: "u5", name: "Алексей Новиков", booksRead: 11, quizzesPassed: 3, badgesCount: 3 },
+                    { id: "u6", name: "Мария Соколова", booksRead: 17, quizzesPassed: 6, badgesCount: 4 }
+                  ].filter(reader => reader.name.toLowerCase().includes(readersSearch.toLowerCase())).length === 0 && (
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>Читатели с таким именем не найдены.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* My Friends List */}
+            <div style={{ marginTop: '30px' }}>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>👥 Мои друзья ({friendsIds.length})</span>
+              </h4>
+              {friendsIds.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>Вы еще не добавили ни одного друга. Используйте поиск выше!</p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                  {[
+                    { id: "u1", name: "Александр Волков", booksRead: 14, quizzesPassed: 5, badgesCount: 4 },
+                    { id: "u2", name: "Елена Смирнова", booksRead: 8, quizzesPassed: 2, badgesCount: 2 },
+                    { id: "u3", name: "Дмитрий Кузнецов", booksRead: 23, quizzesPassed: 8, badgesCount: 5 },
+                    { id: "u4", name: "Ольга Морозова", booksRead: 4, quizzesPassed: 1, badgesCount: 1 },
+                    { id: "u5", name: "Алексей Новиков", booksRead: 11, quizzesPassed: 3, badgesCount: 3 },
+                    { id: "u6", name: "Мария Соколова", booksRead: 17, quizzesPassed: 6, badgesCount: 4 }
+                  ].filter(reader => friendsIds.includes(reader.id))
+                   .map(friend => (
+                    <div key={friend.id} className="glass" style={{
+                      padding: '16px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid var(--border-color)',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}>
+                      <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        color: '#fff',
+                        fontSize: '1rem'
+                      }}>
+                        {friend.name[0]}
+                      </div>
+                      <div>
+                        <h5 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>{friend.name}</h5>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>📚 Изучил книг: {friend.booksRead}</p>
+                      </div>
+                      <button
+                        onClick={() => toggleFriend(friend.id)}
+                        className="btn-secondary"
+                        style={{
+                          padding: '4px 10px',
+                          fontSize: '0.75rem',
+                          background: 'rgba(239, 68, 68, 0.05)',
+                          border: '1px solid rgba(239, 68, 68, 0.2)',
+                          color: '#ef4444'
+                        }}
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Downloads history */}
