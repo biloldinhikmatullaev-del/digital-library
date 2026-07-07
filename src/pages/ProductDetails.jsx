@@ -249,11 +249,54 @@ export default function ProductDetails() {
   // Reviews & Comments States
   const [reviews, setReviews] = useState([]);
   const [reviewAuthor, setReviewAuthor] = useState("");
-  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewRating, setReviewRating] = useState(9);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewHoverRating, setReviewHoverRating] = useState(0);
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState(false);
+
+  // Social states
+  const [likesCount, setLikesCount] = useState(124);
+  const [isLiked, setIsLiked] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    const savedLiked = localStorage.getItem(`lumina_liked_${id}`);
+    const savedLikesCount = localStorage.getItem(`lumina_likes_count_${id}`);
+    
+    if (savedLiked) {
+      setIsLiked(JSON.parse(savedLiked));
+    }
+    
+    if (savedLikesCount) {
+      setLikesCount(JSON.parse(savedLikesCount));
+    } else {
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const initialLikes = 50 + (Math.abs(hash) % 150);
+      setLikesCount(initialLikes);
+      localStorage.setItem(`lumina_likes_count_${id}`, JSON.stringify(initialLikes));
+    }
+  }, [id]);
+
+  const handleLikeClick = () => {
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+    const nextCount = nextLiked ? (likesCount + 1) : (likesCount - 1);
+    setLikesCount(nextCount);
+    localStorage.setItem(`lumina_liked_${id}`, JSON.stringify(nextLiked));
+    localStorage.setItem(`lumina_likes_count_${id}`, JSON.stringify(nextCount));
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -300,7 +343,7 @@ export default function ProductDetails() {
     
     setReviewComment("");
     setReviewAuthor("");
-    setReviewRating(5);
+    setReviewRating(9);
     setReviewSuccess(true);
     setReviewError("");
     
@@ -538,18 +581,22 @@ export default function ProductDetails() {
           <h1 className="product-detail-title">{product.name}</h1>
 
           <div className="product-rating-row">
-            <div className="stars">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  size={16}
-                  fill={i < Math.floor(product.rating) ? "currentColor" : "none"}
-                  className="star-icon"
-                />
-              ))}
+            <div className="stars" title={`Оценка: ${(product.rating <= 5.0 ? product.rating * 1.8 : product.rating).toFixed(1)} из 9`}>
+              {[...Array(9)].map((_, i) => {
+                const scaledVal = product.rating <= 5.0 ? (product.rating * 1.8) : product.rating;
+                return (
+                  <Star
+                    key={i}
+                    size={16}
+                    fill={i < Math.floor(scaledVal) ? "currentColor" : "none"}
+                    className="star-icon"
+                    style={{ color: i < Math.floor(scaledVal) ? '#ffb800' : 'rgba(255, 255, 255, 0.1)' }}
+                  />
+                );
+              })}
             </div>
-            <span className="rating-value">{product.rating.toFixed(1)}</span>
-            <span className="reviews-count">(2 отзыва)</span>
+            <span className="rating-value">{(product.rating <= 5.0 ? product.rating * 1.8 : product.rating).toFixed(1)} / 9</span>
+            <span className="reviews-count">({reviews.length} отзывов)</span>
           </div>
 
           <div className="price-row">
@@ -576,14 +623,175 @@ export default function ProductDetails() {
               </button>
             ) : (
               <>
-                <button
-                  className="btn-primary add-to-cart-big"
-                  onClick={handleAddToCart}
-                  disabled={isSaved}
-                >
-                  <ShoppingCart size={20} fill={isSaved ? "currentColor" : "none"} />
-                  <span>{isSaved ? "В корзине" : "В корзину"}</span>
-                </button>
+                <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                  <button
+                    className="btn-primary add-to-cart-big"
+                    onClick={handleAddToCart}
+                    disabled={isSaved}
+                    style={{ flex: 1 }}
+                  >
+                    <ShoppingCart size={20} fill={isSaved ? "currentColor" : "none"} />
+                    <span>{isSaved ? "В корзине" : "В корзину"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLikeClick}
+                    className="btn-secondary"
+                    style={{
+                      padding: '0 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: isLiked ? '#ef4444' : 'var(--text-primary)',
+                      border: isLiked ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-color)',
+                      background: isLiked ? 'rgba(239, 68, 68, 0.05)' : 'rgba(255, 255, 255, 0.02)',
+                      cursor: 'pointer',
+                      borderRadius: 'var(--radius-md)',
+                      transition: 'all 0.2s',
+                      fontWeight: 600
+                    }}
+                    title="Нравится"
+                  >
+                    <span style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>
+                      {isLiked ? "❤️" : "🤍"}
+                    </span>
+                    <span>{likesCount}</span>
+                  </button>
+
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShareOpen(!shareOpen)}
+                      className="btn-secondary"
+                      style={{
+                        padding: '0 16px',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--border-color)',
+                        background: 'rgba(255,255,255,0.02)',
+                        transition: 'all 0.2s'
+                      }}
+                      title="Поделиться"
+                    >
+                      🔗
+                    </button>
+                    
+                    {shareOpen && (
+                      <div className="glass" style={{
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        marginTop: '8px',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '12px',
+                        zIndex: 10,
+                        width: '220px',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                      }}>
+                        <button
+                          type="button"
+                          onClick={handleCopyLink}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            padding: '8px 12px',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            textAlign: 'left',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            width: '100%'
+                          }}
+                        >
+                          <span>{copiedLink ? "Скопировано!" : "Скопировать ссылку"}</span>
+                          <span>📋</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            alert("Поделиться в Telegram: ссылка на книгу отправлена в ваши диалоги!");
+                            setShareOpen(false);
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            padding: '6px 8px',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            textAlign: 'left',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            width: '100%'
+                          }}
+                        >
+                          <span>✈️</span> Telegram
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            alert("Поделиться во ВКонтакте: ссылка опубликована на вашей стене!");
+                            setShareOpen(false);
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            padding: '6px 8px',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            textAlign: 'left',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            width: '100%'
+                          }}
+                        >
+                          <span>🔵</span> ВКонтакте
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            alert("Поделиться по Email: письмо отправлено!");
+                            setShareOpen(false);
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            padding: '6px 8px',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            textAlign: 'left',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            width: '100%'
+                          }}
+                        >
+                          <span>✉️</span> Электронная почта
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 {product.category !== "audiobooks" && (
                   <button 
                     className="btn-primary add-to-cart-big"
@@ -772,14 +980,18 @@ export default function ProductDetails() {
                         <span className="review-date" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{rev.date}</span>
                       </div>
                       <div className="review-rating" style={{ color: '#ffb800', display: 'flex', gap: '2px', marginBottom: '12px' }}>
-                        {[...Array(5)].map((_, starIndex) => (
-                          <Star
-                            key={starIndex}
-                            size={14}
-                            fill={starIndex < rev.rating ? "currentColor" : "none"}
-                            className="star-icon"
-                          />
-                        ))}
+                        {[...Array(9)].map((_, starIndex) => {
+                          const scaledRevRating = rev.rating <= 5 ? Math.round(rev.rating * 1.8) : rev.rating;
+                          return (
+                            <Star
+                              key={starIndex}
+                              size={14}
+                              fill={starIndex < scaledRevRating ? "currentColor" : "none"}
+                              className="star-icon"
+                              style={{ color: starIndex < scaledRevRating ? '#ffb800' : 'rgba(255, 255, 255, 0.1)' }}
+                            />
+                          );
+                        })}
                       </div>
                       <p className="reviewer-text" style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>{rev.comment}</p>
                     </div>
@@ -794,9 +1006,9 @@ export default function ProductDetails() {
                 <form onSubmit={handleAddReview} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {/* Rating Selector */}
                   <div className="form-rating-selector" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Ваша оценка:</span>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Ваша оценка (по 9-бальной шкале):</span>
                     <div className="rating-stars-input" style={{ display: 'flex', gap: '6px', color: '#ffb800' }}>
-                      {[1, 2, 3, 4, 5].map((num) => (
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                         <button
                           key={num}
                           type="button"

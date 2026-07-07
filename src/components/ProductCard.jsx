@@ -95,7 +95,7 @@ export default function ProductCard({ product }) {
         <div className="card-body">
           <div className="card-rating">
             <Star size={14} fill="currentColor" className="star-icon" />
-            <span>{product.rating.toFixed(1)}</span>
+            <span>{(product.rating <= 5.0 ? product.rating * 1.8 : product.rating).toFixed(1)} / 9</span>
           </div>
 
           <h3 className="card-title">{product.name}</h3>
