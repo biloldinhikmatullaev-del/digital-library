@@ -567,5 +567,35 @@ export const mockProducts = [
     description: "Красочные цифровые альбомы и статьи, посвященные истории мировой живописи, скульптуре, искусству эпохи Возрождения и авангарду.",
     specs: ["Тема: Искусствоведение", "Высокое разрешение репродукций"],
     stock: 100
+  },
+  {
+    id: "pending_1",
+    name: "Диссертация: Перспективные методы квантового шифрования",
+    space: "educational",
+    category: "dissertations",
+    author: "Аспирант Ковалев Д.В.",
+    format: "PDF",
+    size: "4.8 MB",
+    rating: 5.0,
+    image: "/images/science_cover.png",
+    description: "Исследование протоколов квантового распределения ключей и разработка гибридных алгоритмов шифрования.",
+    specs: ["На проверке", "Спецификация: Черновик"],
+    stock: 100,
+    status: "pending"
+  },
+  {
+    id: "pending_2",
+    name: "Регламент: Информационная безопасность при удаленной работе",
+    space: "corporate",
+    category: "regulations",
+    author: "Отдел ИБ",
+    format: "PDF",
+    size: "1.2 MB",
+    rating: 5.0,
+    image: "/images/document_cover.png",
+    description: "Свод правил и технических требований по подключению сотрудников к внутренним сетям компании через VPN.",
+    specs: ["Регламент", "Черновик", "Отдел ИБ"],
+    stock: 100,
+    status: "pending"
   }
 ];

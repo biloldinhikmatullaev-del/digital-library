@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
-import { PlusCircle, Trash2, LayoutGrid, ShieldAlert, Edit } from "lucide-react";
+import { PlusCircle, Trash2, LayoutGrid, ShieldAlert, Edit, Check, X } from "lucide-react";
 import "./Admin.css";
 
 export default function Admin() {
@@ -20,10 +20,12 @@ export default function Admin() {
     category: "books",
     description: "",
     specs: "",
-    stock: "100"
+    stock: "100",
+    status: "approved"
   });
 
   const [message, setMessage] = useState("");
+  const [adminTab, setAdminTab] = useState("all");
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -113,7 +115,8 @@ export default function Admin() {
             space: newProduct.space,
             category: newProduct.category,
             description: newProduct.description || "Материал для самостоятельной работы.",
-            specs: newProduct.specs ? newProduct.specs.split(",").map(s => s.trim()) : ["Рекомендуется к изучению"]
+            specs: newProduct.specs ? newProduct.specs.split(",").map(s => s.trim()) : ["Рекомендуется к изучению"],
+            status: newProduct.status
           };
         }
         return p;
@@ -139,12 +142,17 @@ export default function Admin() {
         description: newProduct.description || "Материал для самостоятельной работы.",
         specs: newProduct.specs ? newProduct.specs.split(",").map(s => s.trim()) : ["Рекомендуется к изучению"],
         stock: 100,
-        rating: 5.0
+        rating: 5.0,
+        status: newProduct.status || "approved"
       };
 
       updatedList = [formattedProduct, ...products];
       setProducts(updatedList);
-      setMessage(`Материал "${formattedProduct.name}" успешно добавлен в базу!`);
+      setMessage(
+        formattedProduct.status === "pending"
+          ? `Материал "${formattedProduct.name}" отправлен на модерацию!`
+          : `Материал "${formattedProduct.name}" успешно добавлен в базу!`
+      );
     }
 
     localStorage.setItem("lumina_custom_products", JSON.stringify(updatedList));
@@ -159,9 +167,31 @@ export default function Admin() {
       category: "books",
       description: "",
       specs: "",
-      stock: "100"
+      stock: "100",
+      status: "approved"
     });
 
+    setTimeout(() => setMessage(""), 4000);
+  };
+
+  const handleApproveProduct = (id) => {
+    const updated = products.map((p) => {
+      if (p.id === id) {
+        return { ...p, status: "approved" };
+      }
+      return p;
+    });
+    setProducts(updated);
+    localStorage.setItem("lumina_custom_products", JSON.stringify(updated));
+    setMessage("Материал успешно проверен и опубликован!");
+    setTimeout(() => setMessage(""), 4000);
+  };
+
+  const handleRejectProduct = (id) => {
+    const updated = products.filter((p) => p.id !== id);
+    setProducts(updated);
+    localStorage.setItem("lumina_custom_products", JSON.stringify(updated));
+    setMessage("Материал отклонен и удален.");
     setTimeout(() => setMessage(""), 4000);
   };
 
@@ -362,6 +392,21 @@ export default function Admin() {
             </div>
 
             <div className="form-group">
+              <label htmlFor="status">Статус публикации</label>
+              <select
+                id="status"
+                name="status"
+                className="input-field"
+                value={newProduct.status}
+                onChange={handleInputChange}
+                style={{ background: 'var(--bg-dark)' }}
+              >
+                <option value="approved">🟢 Опубликовать сразу (Активный)</option>
+                <option value="pending">🟡 Направить на модерацию (Черновик)</option>
+              </select>
+            </div>
+
+            <div className="form-group">
               <label htmlFor="description">Описание</label>
               <textarea
                 id="description"
@@ -420,9 +465,57 @@ export default function Admin() {
 
         {/* Existing Products table simulation */}
         <section className="admin-inventory-section glass">
-          <h3 className="admin-panel-title">
-            <LayoutGrid size={20} /> Список ресурсов
-          </h3>
+          <div className="admin-tabs" style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '20px', gap: '20px' }}>
+            <button
+              type="button"
+              onClick={() => setAdminTab("all")}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                borderBottom: adminTab === "all" ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                color: adminTab === "all" ? 'var(--accent-primary)' : 'var(--text-muted)',
+                padding: '10px 15px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+            >
+              📚 Все ресурсы ({products.filter(p => p.status !== "pending").length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdminTab("moderation")}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                borderBottom: adminTab === "moderation" ? '2px solid var(--accent-secondary)' : '2px solid transparent',
+                color: adminTab === "moderation" ? 'var(--accent-secondary)' : 'var(--text-muted)',
+                padding: '10px 15px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                transition: 'all 0.2s',
+                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              🔍 Очередь модерации
+              <span style={{
+                background: products.filter(p => p.status === "pending").length > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                color: products.filter(p => p.status === "pending").length > 0 ? '#ef4444' : 'var(--text-muted)',
+                fontSize: '0.75rem',
+                padding: '2px 6px',
+                borderRadius: '10px',
+                fontWeight: 700
+              }}>
+                {products.filter(p => p.status === "pending").length}
+              </span>
+            </button>
+          </div>
 
           {loading ? (
             <div className="loading-container">
@@ -430,60 +523,112 @@ export default function Admin() {
             </div>
           ) : (
             <div className="inventory-table-wrapper">
-              <table className="inventory-table">
-                <thead>
-                  <tr>
-                    <th>Код</th>
-                    <th>Название</th>
-                    <th>Формат</th>
-                    <th>Раздел</th>
-                    <th>Действие</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((p) => (
-                    <tr key={p.id}>
-                      <td className="table-id">{p.id}</td>
-                      <td className="table-name" style={{ fontSize: '0.85rem' }}>{p.name}</td>
-                      <td style={{ textTransform: 'uppercase', fontSize: '0.8rem' }}>{p.format}</td>
-                      <td style={{ fontSize: '0.8rem' }}>{getCategoryLabel(p.category)}</td>
-                      <td style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <button
-                          className="table-edit-btn"
-                          onClick={() => handleEditClick(p)}
-                          title="Редактировать ресурс"
-                          style={{
-                            background: 'rgba(255,255,255,0.05)',
-                            border: '1px solid var(--border-color)',
-                            color: 'var(--accent-primary)',
-                            padding: '6px',
-                            borderRadius: 'var(--radius-sm)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          className="table-delete-btn"
-                          onClick={() => handleDeleteProduct(p.id, p.name)}
-                          title="Удалить из каталога"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
+              {products.filter(p => (adminTab === "moderation" ? p.status === "pending" : p.status !== "pending")).length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  {adminTab === "moderation" ? "Очередь модерации пуста. Новых предложений нет." : "Каталог ресурсов пуст."}
+                </div>
+              ) : (
+                <table className="inventory-table">
+                  <thead>
+                    <tr>
+                      <th>Код</th>
+                      <th>Название</th>
+                      <th>Формат</th>
+                      <th>Раздел</th>
+                      <th>Действие</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {products
+                      .filter(p => (adminTab === "moderation" ? p.status === "pending" : p.status !== "pending"))
+                      .map((p) => (
+                        <tr key={p.id}>
+                          <td className="table-id">{p.id}</td>
+                          <td className="table-name" style={{ fontSize: '0.85rem' }}>{p.name}</td>
+                          <td style={{ textTransform: 'uppercase', fontSize: '0.8rem' }}>{p.format}</td>
+                          <td style={{ fontSize: '0.8rem' }}>{getCategoryLabel(p.category)}</td>
+                          
+                          {adminTab === "moderation" ? (
+                            <td style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <button
+                                className="table-edit-btn"
+                                onClick={() => handleApproveProduct(p.id)}
+                                title="Одобрить и опубликовать"
+                                style={{
+                                  background: 'rgba(16, 185, 129, 0.1)',
+                                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                                  color: '#10b981',
+                                  padding: '6px',
+                                  borderRadius: 'var(--radius-sm)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                <Check size={16} />
+                              </button>
+                              <button
+                                className="table-delete-btn"
+                                onClick={() => handleRejectProduct(p.id)}
+                                title="Отклонить и удалить"
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  color: '#ef4444',
+                                  padding: '6px',
+                                  borderRadius: 'var(--radius-sm)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                <X size={16} />
+                              </button>
+                            </td>
+                          ) : (
+                            <td style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <button
+                                className="table-edit-btn"
+                                onClick={() => handleEditClick(p)}
+                                title="Редактировать ресурс"
+                                style={{
+                                  background: 'rgba(255,255,255,0.05)',
+                                  border: '1px solid var(--border-color)',
+                                  color: 'var(--accent-primary)',
+                                  padding: '6px',
+                                  borderRadius: 'var(--radius-sm)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                className="table-delete-btn"
+                                onClick={() => handleDeleteProduct(p.id, p.name)}
+                                title="Удалить из каталога"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </section>
