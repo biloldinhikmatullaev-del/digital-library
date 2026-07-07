@@ -7,44 +7,44 @@ export default function Footer() {
     <footer className="footer glass">
       <div className="container footer-container">
         <div className="footer-brand">
-          <Link to="/" className="footer-logo">Lumina</Link>
+          <Link to="/" className="footer-logo">Lumina Lib</Link>
           <p className="footer-desc">
-            Premium gadgets & ambient desk electronics. Elevate your workspace experience with curated tech and sleek minimal aesthetics.
+            Современная электронная библиотека для студентов, преподавателей и любителей чтения. Удобный доступ к учебникам, лекциям, методическим материалам, диссертациям и интерактивным викторинам.
           </p>
         </div>
 
         <div className="footer-links-group">
           <div className="footer-links">
-            <h4 className="footer-title">Navigation</h4>
-            <Link to="/">Home</Link>
-            <Link to="/catalog">Shop All</Link>
-            <Link to="/profile">My Account</Link>
+            <h4 className="footer-title">Навигация</h4>
+            <Link to="/">Главная</Link>
+            <Link to="/catalog">Каталог книг</Link>
+            <Link to="/profile">Личный кабинет</Link>
           </div>
 
           <div className="footer-links">
-            <h4 className="footer-title">Categories</h4>
-            <Link to="/catalog?category=audio">Audio</Link>
-            <Link to="/catalog?category=displays">Displays</Link>
-            <Link to="/catalog?category=peripherals">Peripherals</Link>
-            <Link to="/catalog?category=lighting">Lighting</Link>
+            <h4 className="footer-title">Разделы</h4>
+            <Link to="/catalog?space=educational">Университетская</Link>
+            <Link to="/catalog?space=corporate">База знаний</Link>
+            <Link to="/catalog?space=public">Публичная</Link>
+            <Link to="/catalog?space=thematic">Тематические сборники</Link>
           </div>
 
           <div className="footer-links">
-            <h4 className="footer-title">Newsletter</h4>
-            <p className="newsletter-text">Subscribe to receive launch updates and exclusive discounts.</p>
+            <h4 className="footer-title">Рассылка</h4>
+            <p className="newsletter-text">Подпишитесь, чтобы получать уведомления о выходе новых учебных пособий.</p>
             <form className="newsletter-form" onSubmit={(e) => e.preventDefault()}>
-              <input type="email" placeholder="Enter your email" className="input-field" required />
-              <button type="submit" className="btn-primary">Join</button>
+              <input type="email" placeholder="Введите ваш e-mail" className="input-field" required />
+              <button type="submit" className="btn-primary">OK</button>
             </form>
           </div>
         </div>
       </div>
       <div className="footer-bottom">
         <div className="container bottom-container">
-          <p>&copy; {new Date().getFullYear()} Lumina. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Lumina Lib. Все права защищены.</p>
           <div className="bottom-links">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
+            <a href="#">Политика конфиденциальности</a>
+            <a href="#">Пользовательское соглашение</a>
           </div>
         </div>
       </div>

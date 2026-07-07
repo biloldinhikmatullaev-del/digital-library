@@ -37,7 +37,7 @@ export default function Auth() {
     const { name, email, password, confirmPassword } = formData;
 
     if (!isLogin && password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("Пароли не совпадают.");
       setLoading(false);
       return;
     }
@@ -51,7 +51,7 @@ export default function Auth() {
       navigate("/profile");
     } catch (err) {
       console.error("Auth error:", err);
-      setError(err.message || "Failed to authenticate. Please check credentials.");
+      setError(err.message || "Не удалось авторизоваться. Проверьте правильность введенных данных.");
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ export default function Auth() {
         <div className="auth-logo-row">
           <span className="auth-brand">Lumina</span>
           <span className="badge-category">
-            <Sparkles size={12} /> {isMock ? "Mock Mode" : "Firebase Secure"}
+            <Sparkles size={12} /> {isMock ? "Демо-режим" : "Защита Firebase"}
           </span>
         </div>
 
@@ -74,13 +74,13 @@ export default function Auth() {
             className={`auth-tab-btn ${isLogin ? "active" : ""}`}
             onClick={() => handleTabChange(true)}
           >
-            Log In
+            Войти
           </button>
           <button
             className={`auth-tab-btn ${!isLogin ? "active" : ""}`}
             onClick={() => handleTabChange(false)}
           >
-            Sign Up
+            Регистрация
           </button>
         </div>
 
@@ -94,7 +94,7 @@ export default function Auth() {
         <form onSubmit={handleSubmit} className="auth-form">
           {!isLogin && (
             <div className="form-group">
-              <label htmlFor="name">Full Name</label>
+              <label htmlFor="name">Имя и фамилия</label>
               <input
                 type="text"
                 id="name"
@@ -103,13 +103,13 @@ export default function Auth() {
                 required
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="John Doe"
+                placeholder="Иван Иванов"
               />
             </div>
           )}
 
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email">Электронная почта (E-mail)</label>
             <input
               type="email"
               id="email"
@@ -118,12 +118,12 @@ export default function Auth() {
               required
               value={formData.email}
               onChange={handleInputChange}
-              placeholder="you@example.com"
+              placeholder="ivanov@example.com"
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">Пароль</label>
             <input
               type="password"
               id="password"
@@ -138,7 +138,7 @@ export default function Auth() {
 
           {!isLogin && (
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm Password</label>
+              <label htmlFor="confirmPassword">Подтвердите пароль</label>
               <input
                 type="password"
                 id="confirmPassword"
@@ -153,13 +153,13 @@ export default function Auth() {
           )}
 
           <button type="submit" className="btn-primary auth-submit-btn" disabled={loading}>
-            {loading ? "Authenticating..." : isLogin ? "Log In" : "Register"}
+            {loading ? "Авторизация..." : isLogin ? "Войти" : "Зарегистрироваться"}
           </button>
         </form>
 
         {isMock && (
           <p className="mock-credentials-hint">
-            💡 <strong>Mock Mode:</strong> Enter any email and password to log in instantly.
+            💡 <strong>Демо-режим:</strong> введите любую почту и пароль для мгновенного входа.
           </p>
         )}
       </div>
