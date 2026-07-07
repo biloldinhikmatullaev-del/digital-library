@@ -50,6 +50,10 @@ export default function Catalog() {
   const [advLanguage, setAdvLanguage] = useState("");
   const [advPublisher, setAdvPublisher] = useState("");
 
+  // Additional Filter States
+  const [minRating, setMinRating] = useState(0);
+  const [accessType, setAccessType] = useState("all");
+
   // Read URL query parameters on load
   const spaceParam = searchParams.get("space");
   const categoryParam = searchParams.get("category");
@@ -217,6 +221,24 @@ export default function Catalog() {
       }
     }
 
+    // Rating filter
+    if (minRating > 0) {
+      result = result.filter(p => {
+        const scaled = p.rating <= 5.0 ? (p.rating * 1.8) : p.rating;
+        return scaled >= minRating;
+      });
+    }
+
+    // Access Type filter
+    if (accessType !== "all") {
+      result = result.filter(p => {
+        const isOnline = p.category === "tests" || p.category === "quizzes" || p.category === "courses";
+        if (accessType === "online") return isOnline;
+        if (accessType === "download") return !isOnline;
+        return true;
+      });
+    }
+
     // Sorting (skip if sorted by plotScore)
     if (!plotSearchActive || searchQuery.trim() === "") {
       if (sortBy === "name-asc") {
@@ -224,7 +246,23 @@ export default function Catalog() {
       } else if (sortBy === "name-desc") {
         result.sort((a, b) => b.name.localeCompare(a.name));
       } else if (sortBy === "rating") {
-        result.sort((a, b) => b.rating - a.rating);
+        result.sort((a, b) => {
+          const rA = a.rating <= 5.0 ? a.rating * 1.8 : a.rating;
+          const rB = b.rating <= 5.0 ? b.rating * 1.8 : b.rating;
+          return rB - rA;
+        });
+      } else if (sortBy === "likes") {
+        result.sort((a, b) => {
+          const lA = Number(localStorage.getItem(`lumina_likes_count_${a.id}`) || (50 + (a.id.charCodeAt(0) % 150)));
+          const lB = Number(localStorage.getItem(`lumina_likes_count_${b.id}`) || (50 + (b.id.charCodeAt(0) % 150)));
+          return lB - lA;
+        });
+      } else if (sortBy === "pages") {
+        result.sort((a, b) => {
+          const pA = a.pages || a.slides || 0;
+          const pB = b.pages || b.slides || 0;
+          return pB - pA;
+        });
       }
     }
 
@@ -243,7 +281,9 @@ export default function Catalog() {
     advGenre,
     advYear,
     advLanguage,
-    advPublisher
+    advPublisher,
+    minRating,
+    accessType
   ]);
 
   const handleSpaceChange = (space) => {
@@ -279,6 +319,10 @@ export default function Catalog() {
     setAdvYear("");
     setAdvLanguage("");
     setAdvPublisher("");
+
+    // Reset extra filters
+    setMinRating(0);
+    setAccessType("all");
 
     const activeSpace = searchParams.get("space") || "educational";
     setSearchParams({ space: activeSpace });
@@ -579,6 +623,37 @@ export default function Catalog() {
             </div>
           </div>
 
+          {/* Access Type Filter */}
+          <div className="sidebar-section">
+            <label className="filter-label">Доступ к ресурсу</label>
+            <select
+              className="input-field"
+              style={{ width: '100%', background: 'var(--bg-dark)', fontSize: '0.85rem' }}
+              value={accessType}
+              onChange={(e) => setAccessType(e.target.value)}
+            >
+              <option value="all">Любой доступ</option>
+              <option value="online">💻 Читать/пройти онлайн</option>
+              <option value="download">📥 Скачать файл (PDF, DOCX)</option>
+            </select>
+          </div>
+
+          {/* Min Rating Filter */}
+          <div className="sidebar-section">
+            <label className="filter-label">Минимальная оценка</label>
+            <select
+              className="input-field"
+              style={{ width: '100%', background: 'var(--bg-dark)', fontSize: '0.85rem' }}
+              value={minRating}
+              onChange={(e) => setMinRating(Number(e.target.value))}
+            >
+              <option value="0">Любая оценка</option>
+              <option value="8">⭐⭐⭐⭐⭐⭐⭐⭐ 8+ из 9</option>
+              <option value="7">⭐⭐⭐⭐⭐⭐⭐ 7+ из 9</option>
+              <option value="5">⭐⭐⭐⭐⭐ 5+ из 9</option>
+            </select>
+          </div>
+
           {/* Reset button */}
           <button className="btn-secondary reset-btn" onClick={handleResetFilters}>
             <RefreshCw size={16} /> Сбросить фильтры
@@ -603,7 +678,9 @@ export default function Catalog() {
                 <option value="default">По умолчанию</option>
                 <option value="name-asc">Название (А-Я)</option>
                 <option value="name-desc">Название (Я-А)</option>
-                <option value="rating">По оценке</option>
+                <option value="rating">По оценке (1-9 звезд)</option>
+                <option value="likes">По популярности (лайкам)</option>
+                <option value="pages">По объему (страницам)</option>
               </select>
             </div>
           </div>
