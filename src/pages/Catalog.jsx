@@ -41,6 +41,15 @@ export default function Catalog() {
   const [selectedFormat, setSelectedFormat] = useState("all");
   const [sortBy, setSortBy] = useState("default");
 
+  // Advanced Search States
+  const [advSearchExpanded, setAdvSearchExpanded] = useState(false);
+  const [advAuthor, setAdvAuthor] = useState("");
+  const [advTitle, setAdvTitle] = useState("");
+  const [advGenre, setAdvGenre] = useState("all");
+  const [advYear, setAdvYear] = useState("");
+  const [advLanguage, setAdvLanguage] = useState("");
+  const [advPublisher, setAdvPublisher] = useState("");
+
   // Read URL query parameters on load
   const spaceParam = searchParams.get("space");
   const categoryParam = searchParams.get("category");
@@ -171,6 +180,43 @@ export default function Catalog() {
       result = result.filter((product) => product.format.toLowerCase().includes(selectedFormat.toLowerCase()));
     }
 
+    // Advanced Search filters (author, title, genre, year, language, publisher)
+    if (advSearchExpanded) {
+      if (advAuthor.trim()) {
+        result = result.filter(p => p.author && p.author.toLowerCase().includes(advAuthor.toLowerCase()));
+      }
+      if (advTitle.trim()) {
+        result = result.filter(p => p.name.toLowerCase().includes(advTitle.toLowerCase()));
+      }
+      if (advGenre !== "all") {
+        result = result.filter(p => p.category === advGenre);
+      }
+      if (advYear.trim()) {
+        result = result.filter(p => {
+          if (!p.specs) return false;
+          const yearSpec = p.specs.find(s => s.toLowerCase().includes("год") || s.toLowerCase().includes("издание") || /\b\d{4}\b/.test(s));
+          if (!yearSpec) return false;
+          return yearSpec.includes(advYear.trim());
+        });
+      }
+      if (advLanguage.trim()) {
+        result = result.filter(p => {
+          if (!p.specs) return false;
+          const langSpec = p.specs.find(s => s.toLowerCase().includes("язык"));
+          if (!langSpec) return false;
+          return langSpec.toLowerCase().includes(advLanguage.toLowerCase().trim());
+        });
+      }
+      if (advPublisher.trim()) {
+        result = result.filter(p => {
+          if (!p.specs) return false;
+          const pubSpec = p.specs.find(s => s.toLowerCase().includes("издательство"));
+          if (!pubSpec) return false;
+          return pubSpec.toLowerCase().includes(advPublisher.toLowerCase().trim());
+        });
+      }
+    }
+
     // Sorting (skip if sorted by plotScore)
     if (!plotSearchActive || searchQuery.trim() === "") {
       if (sortBy === "name-asc") {
@@ -183,7 +229,22 @@ export default function Catalog() {
     }
 
     setFilteredProducts(result);
-  }, [products, selectedSpace, searchQuery, selectedCategory, selectedFormat, sortBy, plotSearchActive]);
+  }, [
+    products, 
+    selectedSpace, 
+    searchQuery, 
+    selectedCategory, 
+    selectedFormat, 
+    sortBy, 
+    plotSearchActive,
+    advSearchExpanded,
+    advAuthor,
+    advTitle,
+    advGenre,
+    advYear,
+    advLanguage,
+    advPublisher
+  ]);
 
   const handleSpaceChange = (space) => {
     setSelectedSpace(space);
@@ -210,6 +271,14 @@ export default function Catalog() {
     setSelectedCategory("all");
     setSelectedFormat("all");
     setSortBy("default");
+
+    // Reset advanced search fields
+    setAdvAuthor("");
+    setAdvTitle("");
+    setAdvGenre("all");
+    setAdvYear("");
+    setAdvLanguage("");
+    setAdvPublisher("");
 
     const activeSpace = searchParams.get("space") || "educational";
     setSearchParams({ space: activeSpace });
@@ -362,6 +431,120 @@ export default function Catalog() {
                 🔍 Помню только сюжет
               </label>
             </div>
+          </div>
+
+          {/* Advanced Search Accordion/Section */}
+          <div className="sidebar-section" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '16px' }}>
+            <button
+              type="button"
+              onClick={() => setAdvSearchExpanded(!advSearchExpanded)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent-primary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                padding: '4px 0',
+                outline: 'none'
+              }}
+            >
+              <span>⚙️ Расширенный поиск</span>
+              <span>{advSearchExpanded ? "▲" : "▼"}</span>
+            </button>
+
+            {advSearchExpanded && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label htmlFor="adv-title" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Название</label>
+                  <input
+                    type="text"
+                    id="adv-title"
+                    placeholder="Название книги..."
+                    className="input-field"
+                    style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                    value={advTitle}
+                    onChange={(e) => setAdvTitle(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label htmlFor="adv-author" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Автор</label>
+                  <input
+                    type="text"
+                    id="adv-author"
+                    placeholder="Имя автора..."
+                    className="input-field"
+                    style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                    value={advAuthor}
+                    onChange={(e) => setAdvAuthor(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label htmlFor="adv-genre" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Жанр / Категория</label>
+                  <select
+                    id="adv-genre"
+                    className="input-field"
+                    style={{ fontSize: '0.85rem', padding: '8px 12px', background: 'var(--bg-dark)' }}
+                    value={advGenre}
+                    onChange={(e) => setAdvGenre(e.target.value)}
+                  >
+                    <option value="all">Все жанры</option>
+                    <option value="books">Учебники и книги</option>
+                    <option value="regulations">Регламенты и документы</option>
+                    <option value="courses">Онлайн-курсы</option>
+                    <option value="fiction">Художественная литература</option>
+                    <option value="audiobooks">Аудиокниги</option>
+                    <option value="quizzes">Литературные викторины</option>
+                    <option value="tests">Тестирование / Экзамены</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label htmlFor="adv-year" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Год издания</label>
+                  <input
+                    type="text"
+                    id="adv-year"
+                    placeholder="Например: 2024"
+                    className="input-field"
+                    style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                    value={advYear}
+                    onChange={(e) => setAdvYear(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label htmlFor="adv-lang" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Язык</label>
+                  <input
+                    type="text"
+                    id="adv-lang"
+                    placeholder="Например: Русский"
+                    className="input-field"
+                    style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                    value={advLanguage}
+                    onChange={(e) => setAdvLanguage(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label htmlFor="adv-pub" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Издательство</label>
+                  <input
+                    type="text"
+                    id="adv-pub"
+                    placeholder="Например: Эксмо"
+                    className="input-field"
+                    style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                    value={advPublisher}
+                    onChange={(e) => setAdvPublisher(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Categories list (depends on space) */}
