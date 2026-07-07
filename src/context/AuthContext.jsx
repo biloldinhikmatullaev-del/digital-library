@@ -95,12 +95,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updatedFields) => {
+    const updatedUser = user ? { ...user, ...updatedFields } : null;
+    if (updatedUser) {
+      if (user.isMock || !isFirebaseConfigured) {
+        localStorage.setItem("lumina_mock_user", JSON.stringify(updatedUser));
+      }
+      setUser(updatedUser);
+    }
+  };
+
   const value = {
     user,
     loading,
     signup,
     login,
     logout,
+    updateUser,
     isMock: !isFirebaseConfigured
   };
 

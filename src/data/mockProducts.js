@@ -1,4 +1,4 @@
-const libraryAssets = [
+export const mockProducts = [
   // --- 1. EDUCATIONAL SPACE (Университетская библиотека) ---
   {
     id: "b1",
@@ -539,14 +539,3 @@ const libraryAssets = [
     stock: 100
   }
 ];
-
-exports.handler = async (event, context) => {
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*"
-    },
-    body: JSON.stringify(libraryAssets)
-  };
-};

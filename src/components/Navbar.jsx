@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { ShoppingBag, User, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
+import { User, LogOut, LayoutDashboard, Menu, X, Palette, ShoppingCart } from "lucide-react";
 import "./Navbar.css";
 
 export default function Navbar({ onCartToggle }) {
@@ -10,6 +10,21 @@ export default function Navbar({ onCartToggle }) {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    return localStorage.getItem("lumina_theme") || "teal";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", currentTheme);
+    localStorage.setItem("lumina_theme", currentTheme);
+  }, [currentTheme]);
+
+  const cycleTheme = () => {
+    const themes = ["teal", "gold", "indigo", "emerald"];
+    const nextIdx = (themes.indexOf(currentTheme) + 1) % themes.length;
+    setCurrentTheme(themes[nextIdx]);
+  };
 
   const handleLogout = async () => {
     try {
@@ -28,42 +43,55 @@ export default function Navbar({ onCartToggle }) {
     <nav className="navbar glass">
       <div className="container nav-container">
         <Link to="/" className="nav-logo" onClick={() => setMobileMenuOpen(false)}>
-          Lumina
+          Lumina Lib
         </Link>
 
         {/* Desktop Menu */}
         <div className="nav-links">
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/catalog" className="nav-link">Shop</Link>
+          <Link to="/" className="nav-link">Главная</Link>
+          <Link to="/catalog" className="nav-link">Каталог</Link>
+          <Link to="/profile" className="nav-link">Личный кабинет</Link>
           {user && (
             <Link to="/admin" className="nav-link nav-admin-link">
-              <LayoutDashboard size={16} /> Admin
+              <LayoutDashboard size={16} /> Админ-панель
             </Link>
           )}
         </div>
 
         <div className="nav-actions">
-          <button className="cart-trigger" onClick={onCartToggle} aria-label="Open cart">
-            <ShoppingBag size={22} />
+          {/* Theme Switcher Button */}
+          <div className="theme-picker-container">
+            <button 
+              className="theme-dot" 
+              onClick={cycleTheme} 
+              title="Сменить тему оформления"
+              aria-label="Сменить тему оформления"
+            >
+              <Palette size={18} />
+            </button>
+          </div>
+
+          <button className="cart-trigger" onClick={onCartToggle} aria-label="Открыть корзину" title="Корзина">
+            <ShoppingCart size={22} />
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
           </button>
 
           {user ? (
             <div className="nav-user-menu">
-              <Link to="/profile" className="nav-user-avatar" title="View Profile">
+              <Link to="/profile" className="nav-user-avatar" title="Личный кабинет">
                 {user.displayName ? user.displayName[0].toUpperCase() : "U"}
               </Link>
-              <button className="logout-btn" onClick={handleLogout} title="Log Out">
+              <button className="logout-btn" onClick={handleLogout} title="Выйти">
                 <LogOut size={20} />
               </button>
             </div>
           ) : (
             <Link to="/auth" className="login-link">
-              <User size={20} /> Login
+              <User size={20} /> Войти
             </Link>
           )}
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Toggle */}
           <button className="mobile-menu-toggle" onClick={toggleMobileMenu} aria-label="Toggle menu">
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -73,22 +101,32 @@ export default function Navbar({ onCartToggle }) {
       {/* Mobile Links Drawer */}
       {mobileMenuOpen && (
         <div className="mobile-drawer glass">
-          <Link to="/" className="mobile-link" onClick={toggleMobileMenu}>Home</Link>
-          <Link to="/catalog" className="mobile-link" onClick={toggleMobileMenu}>Shop</Link>
+          <Link to="/" className="mobile-link" onClick={toggleMobileMenu}>Главная</Link>
+          <Link to="/catalog" className="mobile-link" onClick={toggleMobileMenu}>Каталог</Link>
           {user && (
             <Link to="/admin" className="mobile-link" onClick={toggleMobileMenu}>
-              Admin
+              Админ-панель
             </Link>
           )}
+          
+          {/* Theme Option in Mobile Drawer */}
+          <button 
+            className="mobile-link" 
+            onClick={() => { cycleTheme(); toggleMobileMenu(); }} 
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', width: '100%', gap: '8px', cursor: 'pointer' }}
+          >
+            <Palette size={16} /> Сменить цвет темы
+          </button>
+
           {user ? (
             <>
-              <Link to="/profile" className="mobile-link" onClick={toggleMobileMenu}>Profile</Link>
+              <Link to="/profile" className="mobile-link" onClick={toggleMobileMenu}>Личный кабинет</Link>
               <button className="mobile-link mobile-logout-btn" onClick={() => { handleLogout(); toggleMobileMenu(); }}>
-                <LogOut size={16} /> Log Out
+                <LogOut size={16} /> Выйти
               </button>
             </>
           ) : (
-            <Link to="/auth" className="mobile-link" onClick={toggleMobileMenu}>Login / Sign Up</Link>
+            <Link to="/auth" className="mobile-link" onClick={toggleMobileMenu}>Войти</Link>
           )}
         </div>
       )}

@@ -1,11 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { X, Minus, Plus, Trash2, ArrowRight } from "lucide-react";
+import { X, Trash2, ArrowRight, Download } from "lucide-react";
 import "./CartDrawer.css";
 
 export default function CartDrawer({ isOpen, onClose }) {
-  const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
+  const { cartItems, removeFromCart, clearCart } = useCart();
   const navigate = useNavigate();
 
   if (!isOpen) return null;
@@ -19,17 +19,17 @@ export default function CartDrawer({ isOpen, onClose }) {
     <div className="cart-overlay" onClick={onClose}>
       <div className="cart-drawer glass" onClick={(e) => e.stopPropagation()}>
         <div className="cart-header">
-          <h3 className="cart-drawer-title">Shopping Cart</h3>
-          <button className="close-btn" onClick={onClose} aria-label="Close cart">
+          <h3 className="cart-drawer-title">Корзина</h3>
+          <button className="close-btn" onClick={onClose} aria-label="Закрыть корзину">
             <X size={24} />
           </button>
         </div>
 
         {cartItems.length === 0 ? (
           <div className="cart-empty">
-            <p>Your cart is empty.</p>
+            <p>В вашей корзине пока ничего нет.</p>
             <button className="btn-primary" onClick={onClose}>
-              Start Shopping
+              Перейти к каталогу
             </button>
           </div>
         ) : (
@@ -42,28 +42,21 @@ export default function CartDrawer({ isOpen, onClose }) {
                   </div>
                   <div className="cart-item-details">
                     <h4 className="item-name">{item.name}</h4>
-                    <p className="item-price">${item.price.toFixed(2)}</p>
-                    <div className="item-qty-control">
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span>{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        aria-label="Increase quantity"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
+                    <p className="item-price">
+                      {item.category === "tests" ? "Интерактивно" : `${item.format} • ${item.size || ""}`}
+                    </p>
+                    <span className="badge-category" style={{ fontSize: '0.7rem', padding: '2px 8px', width: 'fit-content' }}>
+                      {item.category === "books" ? "Книга" : 
+                       item.category === "lectures" ? "Лекция" : 
+                       item.category === "presentations" ? "Презентация" : 
+                       item.category === "manuals" ? "Методичка" : "Тест"}
+                    </span>
                   </div>
                   <button
                     className="item-remove-btn"
                     onClick={() => removeFromCart(item.id)}
-                    aria-label="Remove item"
-                    title="Remove item"
+                    aria-label="Удалить"
+                    title="Удалить из корзины"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -73,17 +66,17 @@ export default function CartDrawer({ isOpen, onClose }) {
 
             <div className="cart-summary">
               <div className="summary-row">
-                <span>Subtotal</span>
-                <span className="summary-total">${cartTotal.toFixed(2)}</span>
+                <span>Материалов:</span>
+                <span className="summary-total">{cartItems.length} шт.</span>
               </div>
-              <p className="summary-tax-note">Shipping & taxes calculated at checkout.</p>
+              <p className="summary-tax-note">Доступ предоставляется бесплатно для студентов и преподавателей.</p>
               
               <div className="cart-drawer-actions">
                 <button className="clear-cart-btn" onClick={clearCart}>
-                  Clear Cart
+                  Очистить
                 </button>
                 <button className="btn-primary checkout-btn" onClick={handleCheckout}>
-                  Checkout <ArrowRight size={18} />
+                  Скачать пакет <ArrowRight size={18} />
                 </button>
               </div>
             </div>

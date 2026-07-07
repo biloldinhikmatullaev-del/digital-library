@@ -58,7 +58,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="auth-page container">
+    <div className="auth-page container page-transition">
       <div className="ambient-glow" style={{ top: "10%", left: "30%" }}></div>
 
       <div className="auth-card glass">

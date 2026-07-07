@@ -5,34 +5,31 @@ const CartContext = createContext(null);
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
 
-  // Load cart from localStorage on init
+  // Load saved shelf from localStorage on init
   useEffect(() => {
-    const storedCart = localStorage.getItem("lumina_cart");
+    const storedCart = localStorage.getItem("lumina_shelf");
     if (storedCart) {
       try {
         setCartItems(JSON.parse(storedCart));
       } catch (e) {
-        console.error("Error parsing cart from localStorage", e);
+        console.error("Error parsing shelf items from localStorage", e);
       }
     }
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  // Save shelf to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem("lumina_cart", JSON.stringify(cartItems));
+    localStorage.setItem("lumina_shelf", JSON.stringify(cartItems));
   }, [cartItems]);
 
   const addToCart = (product, quantity = 1) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === product.id);
       if (existingItem) {
-        return prevItems.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: Math.min(item.quantity + quantity, product.stock || 99) }
-            : item
-        );
+        // For digital library materials, quantity is usually capped at 1
+        return prevItems;
       }
-      return [...prevItems, { ...product, quantity }];
+      return [...prevItems, { ...product, quantity: 1 }];
     });
   };
 
@@ -41,23 +38,18 @@ export const CartProvider = ({ children }) => {
   };
 
   const updateQuantity = (productId, quantity) => {
+    // For digital materials, quantity is always 1, so we do nothing or just remove it if quantity <= 0
     if (quantity <= 0) {
       removeFromCart(productId);
-      return;
     }
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
   };
 
   const clearCart = () => {
     setCartItems([]);
   };
 
-  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const cartCount = cartItems.length; // Count unique files
+  const cartTotal = 0; // Everything is free access in library simulation
 
   const value = {
     cartItems,

@@ -215,6 +215,40 @@ body {
   }
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Page Slide Up Animation */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Audio Wave Pulsing keyframe */
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(171, 100%, 41%, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(171, 100%, 41%, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(171, 100%, 41%, 0);
+  }
+}
+
 /* Badges */
 .badge-category {
   font-family: var(--font-accent);
@@ -239,7 +273,31 @@ body {
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* Dynamic Color Themes */
+html[data-theme="teal"] {
+  --accent-primary: hsl(171, 100%, 41%);
+  --accent-secondary: hsl(263, 90%, 65%);
+  --accent-glow: hsla(171, 100%, 41%, 0.15);
+  --accent-glow-sec: hsla(263, 90%, 65%, 0.15);
+}
+
+html[data-theme="gold"] {
+  --accent-primary: hsl(43, 100%, 50%);
+  --accent-secondary: hsl(14, 100%, 57%);
+  --accent-glow: hsla(43, 100%, 50%, 0.15);
+  --accent-glow-sec: hsla(14, 100%, 57%, 0.15);
+}
+
+html[data-theme="indigo"] {
+  --accent-primary: hsl(245, 100%, 65%);
+  --accent-secondary: hsl(330, 95%, 60%);
+  --accent-glow: hsla(245, 100%, 65%, 0.15);
+  --accent-glow-sec: hsla(330, 95%, 60%, 0.15);
+}
+
+html[data-theme="emerald"] {
+  --accent-primary: hsl(145, 100%, 40%);
+  --accent-secondary: hsl(88, 100%, 45%);
+  --accent-glow: hsla(145, 100%, 40%, 0.15);
+  --accent-glow-sec: hsla(88, 100%, 45%, 0.15);
 }

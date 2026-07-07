@@ -2,23 +2,19 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { CreditCard, ShoppingBag, CheckCircle, ArrowRight, ShieldCheck } from "lucide-react";
+import { CheckCircle, ArrowRight, ShieldCheck, Download, Mail, ShoppingCart } from "lucide-react";
 import "./Checkout.css";
 
 export default function Checkout() {
-  const { cartItems, cartTotal, clearCart } = useCart();
+  const { cartItems, clearCart } = useCart();
   const { user } = useAuth();
   
   const [formData, setFormData] = useState({
     email: user ? user.email : "",
     fullName: user ? user.displayName : "",
-    address: "",
-    city: "",
-    zipCode: "",
-    cardName: "",
-    cardNumber: "",
-    cardExpiry: "",
-    cardCvv: ""
+    institution: "",
+    role: "student",
+    department: ""
   });
 
   const [loading, setLoading] = useState(false);
@@ -26,8 +22,6 @@ export default function Checkout() {
   const [orderResult, setOrderResult] = useState(null);
 
   const isCartEmpty = cartItems.length === 0;
-  const shippingCost = cartTotal > 150 ? 0 : 15.0;
-  const grandTotal = cartTotal + shippingCost;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -42,7 +36,7 @@ export default function Checkout() {
     setError("");
 
     try {
-      // Call Netlify serverless function
+      // Simulate backend generation of bundle download link
       const res = await fetch("/.netlify/functions/checkout", {
         method: "POST",
         headers: {
@@ -52,17 +46,15 @@ export default function Checkout() {
           items: cartItems.map((item) => ({
             id: item.id,
             name: item.name,
-            price: item.price,
-            quantity: item.quantity
+            format: item.format
           })),
           customer: {
             email: formData.email,
             name: formData.fullName,
-            address: formData.address,
-            city: formData.city,
-            zipCode: formData.zipCode
+            institution: formData.institution,
+            role: formData.role
           },
-          total: grandTotal
+          total: cartItems.length // Total items count
         })
       });
 
@@ -70,24 +62,25 @@ export default function Checkout() {
 
       if (res.ok && data.success) {
         setOrderResult(data);
-        // Save order in mock order history
-        const mockOrders = JSON.parse(localStorage.getItem("lumina_mock_orders") || "[]");
-        mockOrders.unshift({
-          orderId: data.orderId,
-          date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
-          total: data.total,
-          items: cartItems.map(item => ({ name: item.name, price: item.price, quantity: item.quantity })),
-          status: "Processing"
+        
+        // Save to mock profile downloads history
+        const mockDownloads = JSON.parse(localStorage.getItem("lumina_mock_downloads") || "[]");
+        mockDownloads.unshift({
+          bundleId: data.orderId,
+          date: new Date().toLocaleDateString("ru-RU", { year: "numeric", month: "short", day: "numeric" }),
+          itemsCount: cartItems.length,
+          itemsList: cartItems.map(item => item.name).join(", "),
+          status: "Готово к загрузке"
         });
-        localStorage.setItem("lumina_mock_orders", JSON.stringify(mockOrders));
+        localStorage.setItem("lumina_mock_downloads", JSON.stringify(mockDownloads));
 
         clearCart();
       } else {
-        throw new Error(data.error || "Something went wrong during checkout.");
+        throw new Error(data.error || "Ошибка при генерации ссылок.");
       }
     } catch (err) {
       console.error("Checkout error:", err);
-      setError(err.message || "Failed to process checkout. Please try again.");
+      setError(err.message || "Не удалось отправить запрос. Пожалуйста, попробуйте снова.");
     } finally {
       setLoading(false);
     }
@@ -98,49 +91,57 @@ export default function Checkout() {
       <div className="checkout-page container success-view">
         <div className="success-card glass">
           <CheckCircle size={64} className="success-icon" />
-          <h2 className="success-title">Thank you for your order!</h2>
-          <p className="success-subtitle">Your payment was processed successfully.</p>
+          <h2 className="quiz-finished-title" style={{ fontSize: '2.2rem', marginBottom: '10px' }}>Доступ получен!</h2>
+          <p className="success-subtitle">Материалы подготовлены к скачиванию.</p>
           
-          <div className="order-receipt glass">
+          <div className="order-receipt glass" style={{ width: '100%' }}>
             <div className="receipt-row">
-              <span>Order Number</span>
+              <span>Номер пакета:</span>
               <strong className="receipt-value">{orderResult.orderId}</strong>
             </div>
             <div className="receipt-row">
-              <span>Total Paid</span>
-              <strong>${orderResult.total.toFixed(2)}</strong>
+              <span>Всего материалов:</span>
+              <strong>{orderResult.total} шт.</strong>
             </div>
             <div className="receipt-row">
-              <span>Estimated Delivery</span>
-              <span>{orderResult.deliveryEstimate}</span>
+              <span>Отправлено на email:</span>
+              <span>{formData.email}</span>
             </div>
           </div>
           
-          <p className="success-notice">We've sent a confirmation email to {formData.email}.</p>
-          <Link to="/catalog" className="btn-primary success-btn">
-            Continue Shopping <ArrowRight size={18} />
-          </Link>
+          <p className="success-notice">
+            Мы продублировали ссылки на указанный почтовый ящик. Вы можете скачать файлы прямо сейчас.
+          </p>
+          
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <button onClick={() => alert("Скачивание архива ZIP началось...")} className="btn-primary success-btn">
+              <Download size={18} /> Скачать ZIP-архив
+            </button>
+            <Link to="/catalog" className="btn-secondary success-btn" style={{ padding: '16px 28px' }}>
+              В каталог
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="checkout-page container">
+    <div className="checkout-page container page-transition">
       <div className="ambient-glow" style={{ top: "0", right: "20%" }}></div>
 
       <div className="checkout-header">
-        <h1 className="checkout-title">Secure Checkout</h1>
-        <p className="checkout-subtitle">Review your bag and complete your order details.</p>
+        <h1 className="checkout-title">Получение материалов</h1>
+        <p className="checkout-subtitle">Подтвердите ваши данные для мгновенного доступа к скачиванию.</p>
       </div>
 
       {isCartEmpty ? (
         <div className="checkout-empty glass">
-          <ShoppingBag size={48} className="empty-icon" />
-          <h3>Your shopping bag is empty</h3>
-          <p>You cannot checkout with an empty bag.</p>
+          <ShoppingCart size={48} className="empty-icon" />
+          <h3>Ваша корзина пуста</h3>
+          <p>Добавьте книги, лекции или методички в каталоге, чтобы скачать их.</p>
           <Link to="/catalog" className="btn-primary">
-            Browse Catalog
+            Перейти к каталогу
           </Link>
         </div>
       ) : (
@@ -149,12 +150,12 @@ export default function Checkout() {
           <form className="checkout-form glass" onSubmit={handleSubmit}>
             {error && <div className="checkout-error">{error}</div>}
 
-            {/* Step 1: Customer Contact */}
+            {/* Step 1: User Info */}
             <div className="form-section">
-              <h3 className="form-section-title">1. Customer Information</h3>
+              <h3 className="form-section-title">1. Личные данные</h3>
               <div className="form-grid">
                 <div className="form-group span-2">
-                  <label htmlFor="email">Email Address</label>
+                  <label htmlFor="email">Email для отправки материалов</label>
                   <input
                     type="email"
                     id="email"
@@ -167,7 +168,7 @@ export default function Checkout() {
                   />
                 </div>
                 <div className="form-group span-2">
-                  <label htmlFor="fullName">Full Name</label>
+                  <label htmlFor="fullName">ФИО полностью</label>
                   <input
                     type="text"
                     id="fullName"
@@ -176,149 +177,97 @@ export default function Checkout() {
                     required
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    placeholder="John Doe"
+                    placeholder="Иванов Иван Иванович"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Step 2: Shipping Address */}
+            {/* Step 2: Educational Institution Details */}
             <div className="form-section">
-              <h3 className="form-section-title">2. Shipping Address</h3>
+              <h3 className="form-section-title">2. Место учебы / работы</h3>
               <div className="form-grid">
                 <div className="form-group span-2">
-                  <label htmlFor="address">Street Address</label>
+                  <label htmlFor="institution">Учебное заведение (ВУЗ / Школа)</label>
                   <input
                     type="text"
-                    id="address"
-                    name="address"
+                    id="institution"
+                    name="institution"
                     className="input-field"
                     required
-                    value={formData.address}
+                    value={formData.institution}
                     onChange={handleInputChange}
-                    placeholder="123 Workspace Blvd"
+                    placeholder="МГУ им. Ломоносова"
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="city">City</label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
+                  <label htmlFor="role">Ваша роль</label>
+                  <select
+                    id="role"
+                    name="role"
                     className="input-field"
-                    required
-                    value={formData.city}
+                    value={formData.role}
                     onChange={handleInputChange}
-                    placeholder="Silicon Valley"
-                  />
+                    style={{ background: 'var(--bg-dark)' }}
+                  >
+                    <option value="student">Студент / Аспирант</option>
+                    <option value="teacher">Преподаватель</option>
+                    <option value="researcher">Научный сотрудник</option>
+                    <option value="other">Другое</option>
+                  </select>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="zipCode">Zip/Postal Code</label>
+                  <label htmlFor="department">Группа / Кафедра</label>
                   <input
                     type="text"
-                    id="zipCode"
-                    name="zipCode"
+                    id="department"
+                    name="department"
                     className="input-field"
-                    required
-                    value={formData.zipCode}
+                    value={formData.department}
                     onChange={handleInputChange}
-                    placeholder="94025"
+                    placeholder="Группа 301 / Кафедра ИТ"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Step 3: Payment Details */}
+            {/* Step 3: Terms Summary instead of credit card */}
             <div className="form-section">
-              <h3 className="form-section-title">
-                <CreditCard size={18} /> 3. Payment Method
-              </h3>
-              <p className="payment-hint">This is a secure simulation. Enter any mock card values.</p>
-              <div className="form-grid">
-                <div className="form-group span-2">
-                  <label htmlFor="cardName">Cardholder Name</label>
-                  <input
-                    type="text"
-                    id="cardName"
-                    name="cardName"
-                    className="input-field"
-                    required
-                    value={formData.cardName}
-                    onChange={handleInputChange}
-                    placeholder="JOHN DOE"
-                  />
-                </div>
-                <div className="form-group span-2">
-                  <label htmlFor="cardNumber">Card Number</label>
-                  <input
-                    type="text"
-                    id="cardNumber"
-                    name="cardNumber"
-                    className="input-field"
-                    required
-                    maxLength="19"
-                    value={formData.cardNumber}
-                    onChange={handleInputChange}
-                    placeholder="4111 2222 3333 4444"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="cardExpiry">Expiration (MM/YY)</label>
-                  <input
-                    type="text"
-                    id="cardExpiry"
-                    name="cardExpiry"
-                    className="input-field"
-                    required
-                    maxLength="5"
-                    value={formData.cardExpiry}
-                    onChange={handleInputChange}
-                    placeholder="12/28"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="cardCvv">CVV Code</label>
-                  <input
-                    type="password"
-                    id="cardCvv"
-                    name="cardCvv"
-                    className="input-field"
-                    required
-                    maxLength="4"
-                    value={formData.cardCvv}
-                    onChange={handleInputChange}
-                    placeholder="123"
-                  />
-                </div>
+              <h3 className="form-section-title">3. Условия использования</h3>
+              <div className="glass" style={{ padding: '20px', borderRadius: 'var(--radius-md)', fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                <p>✓ Все скачиваемые материалы предназначены исключительно для образовательных и некоммерческих целей.</p>
+                <p style={{ marginTop: '8px' }}>✓ Доступ предоставляется бесплатно в рамках цифровой библиотеки.</p>
+                <p style={{ marginTop: '8px' }}>✓ После отправки вы мгновенно получите прямые ссылки для скачивания.</p>
               </div>
             </div>
 
-            {/* Checkout Action */}
+            {/* Submit */}
             <div className="form-submit-row">
               <div className="secure-badge">
                 <ShieldCheck size={16} />
-                <span>256-bit SSL Encrypted Connection</span>
+                <span>Безопасное HTTPS соединение</span>
               </div>
               <button type="submit" className="btn-primary place-order-btn" disabled={loading}>
-                {loading ? "Processing Secure Payment..." : `Pay $${grandTotal.toFixed(2)}`}
+                {loading ? "Формирование пакета..." : `Получить доступ (${cartItems.length} файл.)`}
               </button>
             </div>
           </form>
 
           {/* Order Summary sidebar */}
           <aside className="checkout-summary-sidebar glass">
-            <h3 className="sidebar-title">Order Summary</h3>
+            <h3 className="sidebar-title">Выбранные файлы</h3>
 
             <div className="checkout-items-list">
               {cartItems.map((item) => (
                 <div className="checkout-item-row" key={item.id}>
                   <div className="checkout-item-thumbnail">
                     <img src={item.image} alt={item.name} />
-                    <span className="checkout-item-qty">{item.quantity}</span>
                   </div>
                   <div className="checkout-item-info">
                     <h4>{item.name}</h4>
-                    <p className="checkout-item-price">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="checkout-item-price" style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                      {item.category === "tests" ? "Интерактивно" : `${item.format} • ${item.size}`}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -326,19 +275,12 @@ export default function Checkout() {
 
             <div className="cost-totals-block">
               <div className="totals-row">
-                <span>Subtotal</span>
-                <span>${cartTotal.toFixed(2)}</span>
+                <span>Материалов:</span>
+                <span>{cartItems.length} шт.</span>
               </div>
-              <div className="totals-row">
-                <span>Shipping</span>
-                <span>{shippingCost === 0 ? "Free" : `$${shippingCost.toFixed(2)}`}</span>
-              </div>
-              {shippingCost > 0 && (
-                <p className="shipping-promo-hint">Add <strong>${(150 - cartTotal).toFixed(2)}</strong> more to get Free Shipping!</p>
-              )}
               <div className="totals-row grand-total-row">
-                <span>Total Due</span>
-                <span>${grandTotal.toFixed(2)}</span>
+                <span>Стоимость:</span>
+                <span>Бесплатно</span>
               </div>
             </div>
           </aside>
