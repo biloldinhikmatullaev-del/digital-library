@@ -309,18 +309,46 @@ export default function ProductDetails() {
           author: "Иван С.",
           rating: 5,
           date: "04.06.2026",
-          comment: "Отличный материал! Все разложено по полочкам, очень помогло при подготовке к экзамену."
+          comment: "Отличный материал! Все разложено по полочкам, очень помогло при подготовке к экзамену.",
+          likes: 5,
+          dislikes: 0
         },
         {
           author: "Мария К.",
           rating: 4,
           date: "18.06.2026",
-          comment: "Хорошая структура. Хотелось бы больше практических примеров в коде, но в целом супер."
+          comment: "Хорошая структура. Хотелось бы больше практических примеров в коде, но в целом супер.",
+          likes: 2,
+          dislikes: 1
         }
       ];
       setReviews(defaults);
     }
   }, [id]);
+
+  const handleLikeReview = (reviewIndex) => {
+    const updated = reviews.map((rev, idx) => {
+      if (idx === reviewIndex) {
+        const currentLikes = rev.likes || 0;
+        return { ...rev, likes: currentLikes + 1 };
+      }
+      return rev;
+    });
+    setReviews(updated);
+    localStorage.setItem(`lumina_reviews_${id}`, JSON.stringify(updated));
+  };
+
+  const handleDislikeReview = (reviewIndex) => {
+    const updated = reviews.map((rev, idx) => {
+      if (idx === reviewIndex) {
+        const currentDislikes = rev.dislikes || 0;
+        return { ...rev, dislikes: currentDislikes + 1 };
+      }
+      return rev;
+    });
+    setReviews(updated);
+    localStorage.setItem(`lumina_reviews_${id}`, JSON.stringify(updated));
+  };
 
   const handleAddReview = (e) => {
     e.preventDefault();
@@ -334,7 +362,9 @@ export default function ProductDetails() {
       author: authorName,
       rating: reviewRating,
       date: new Date().toLocaleDateString("ru-RU"),
-      comment: reviewComment.trim()
+      comment: reviewComment.trim(),
+      likes: 0,
+      dislikes: 0
     };
     
     const updated = [newRev, ...reviews];
@@ -968,13 +998,99 @@ export default function ProductDetails() {
             </div>
           ) : (
             <div className="reviews-content" style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+              
+              {/* Rating Distribution Summary Chart */}
+              <div className="rating-summary-chart glass" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '30px',
+                padding: '24px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--bg-card)',
+                alignItems: 'center'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--accent-primary)', textShadow: '0 0 25px var(--accent-glow)' }}>
+                    {reviews.length > 0 
+                      ? (reviews.reduce((acc, r) => acc + (r.rating <= 5 ? r.rating * 1.8 : r.rating), 0) / reviews.length).toFixed(1)
+                      : "0.0"
+                    }
+                  </span>
+                  <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}> из 9</span>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', color: '#ffb800', marginTop: '10px' }}>
+                    {[...Array(9)].map((_, idx) => {
+                      const avg = reviews.length > 0 
+                        ? (reviews.reduce((acc, r) => acc + (r.rating <= 5 ? r.rating * 1.8 : r.rating), 0) / reviews.length)
+                        : 0;
+                      return (
+                        <Star
+                          key={idx}
+                          size={14}
+                          fill={idx < Math.floor(avg) ? "currentColor" : "none"}
+                          style={{ color: idx < Math.floor(avg) ? '#ffb800' : 'rgba(255, 255, 255, 0.1)' }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '10px' }}>Всего отзывов: {reviews.length}</p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {/* High (7-9 stars) */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ width: '90px', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'right' }}>Высокая (7-9)</span>
+                    <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ 
+                        width: `${reviews.length > 0 ? Math.round((reviews.filter(r => (r.rating <= 5 ? r.rating * 1.8 : r.rating) >= 7).length / reviews.length) * 100) : 0}%`, 
+                        height: '100%', 
+                        background: 'linear-gradient(90deg, var(--accent-primary), #10b981)', 
+                        borderRadius: '4px' 
+                      }}></div>
+                    </div>
+                    <span style={{ width: '35px', fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                      {reviews.length > 0 ? Math.round((reviews.filter(r => (r.rating <= 5 ? r.rating * 1.8 : r.rating) >= 7).length / reviews.length) * 100) : 0}%
+                    </span>
+                  </div>
+                  {/* Medium (4-6 stars) */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ width: '90px', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'right' }}>Средняя (4-6)</span>
+                    <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ 
+                        width: `${reviews.length > 0 ? Math.round((reviews.filter(r => (r.rating <= 5 ? r.rating * 1.8 : r.rating) >= 4 && (r.rating <= 5 ? r.rating * 1.8 : r.rating) <= 6).length / reviews.length) * 100) : 0}%`, 
+                        height: '100%', 
+                        background: '#ffb800', 
+                        borderRadius: '4px' 
+                      }}></div>
+                    </div>
+                    <span style={{ width: '35px', fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                      {reviews.length > 0 ? Math.round((reviews.filter(r => (r.rating <= 5 ? r.rating * 1.8 : r.rating) >= 4 && (r.rating <= 5 ? r.rating * 1.8 : r.rating) <= 6).length / reviews.length) * 100) : 0}%
+                    </span>
+                  </div>
+                  {/* Low (1-3 stars) */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ width: '90px', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'right' }}>Низкая (1-3)</span>
+                    <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ 
+                        width: `${reviews.length > 0 ? Math.round((reviews.filter(r => (r.rating <= 5 ? r.rating * 1.8 : r.rating) <= 3).length / reviews.length) * 100) : 0}%`, 
+                        height: '100%', 
+                        background: '#ef4444', 
+                        borderRadius: '4px' 
+                      }}></div>
+                    </div>
+                    <span style={{ width: '35px', fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                      {reviews.length > 0 ? Math.round((reviews.filter(r => (r.rating <= 5 ? r.rating * 1.8 : r.rating) <= 3).length / reviews.length) * 100) : 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Reviews List */}
               <div className="reviews-list" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {reviews.length === 0 ? (
                   <p className="no-reviews-note" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Отзывов пока нет. Будьте первым, кто оставит свой отзыв!</p>
                 ) : (
-                  reviews.map((rev, i) => (
-                    <div key={i} className="review-card glass" style={{ padding: '20px', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)' }}>
+                  reviews.map((rev, idx) => (
+                    <div key={idx} className="review-card glass" style={{ padding: '24px', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)' }}>
                       <div className="review-meta" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span className="reviewer-name" style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{rev.author}</span>
                         <span className="review-date" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{rev.date}</span>
@@ -993,7 +1109,52 @@ export default function ProductDetails() {
                           );
                         })}
                       </div>
-                      <p className="reviewer-text" style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>{rev.comment}</p>
+                      <p className="reviewer-text" style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '16px' }}>{rev.comment}</p>
+                      
+                      {/* Social Reaction Buttons (Likes / Dislikes) */}
+                      <div style={{ display: 'flex', gap: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginRight: '4px' }}>Полезный отзыв?</span>
+                        
+                        <button
+                          type="button"
+                          onClick={() => handleLikeReview(idx)}
+                          style={{
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid var(--border-color)',
+                            padding: '4px 10px',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            color: 'var(--text-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          👍 <span>{rev.likes || 0}</span>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => handleDislikeReview(idx)}
+                          style={{
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid var(--border-color)',
+                            padding: '4px 10px',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            color: 'var(--text-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          👎 <span>{rev.dislikes || 0}</span>
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
