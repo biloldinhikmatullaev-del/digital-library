@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { User, LogOut, Package, Calendar, CheckCircle, Award, Download, FileText } from "lucide-react";
+import { User, LogOut, Package, Calendar, CheckCircle, Award, Download, FileText, Trophy, Lock } from "lucide-react";
 import "./Profile.css";
 
 export default function Profile() {
@@ -162,6 +162,141 @@ export default function Profile() {
                 }
               </span>
               <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Средний результат</h4>
+            </div>
+          </div>
+
+          {/* Achievements & Badges Section */}
+          <div className="profile-section-card glass" style={{ padding: '40px', borderRadius: 'var(--radius-lg)' }}>
+            <h3 className="section-title-profile" style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px' }}>
+              <Trophy size={20} style={{ color: 'var(--accent-primary)', filter: 'drop-shadow(0 0 10px var(--accent-glow))' }} /> Достижения и значки
+            </h3>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '20px',
+              marginTop: '20px'
+            }}>
+              {[
+                {
+                  id: "first_step",
+                  name: "Первый шаг",
+                  description: "Успешная регистрация личного кабинета читателя",
+                  icon: "🔑",
+                  isUnlocked: true
+                },
+                {
+                  id: "bookworm",
+                  name: "Книжный червь",
+                  description: "Скачан или прочитан первый материал из базы",
+                  icon: "📚",
+                  isUnlocked: downloads.length >= 1
+                },
+                {
+                  id: "scifi_lover",
+                  name: "Любитель фантастики",
+                  description: "Скачивание или чтение художественной/классической прозы",
+                  icon: "👽",
+                  isUnlocked: downloads.length > 0 && downloads.some(dl => {
+                    const list = (dl.itemsList || "").toLowerCase();
+                    return list.includes("мастер") || list.includes("война") || list.includes("роман") || list.includes("есенин") || list.includes("пушкин");
+                  })
+                },
+                {
+                  id: "enlightened",
+                  name: "Просвещенный",
+                  description: "Успешно изучено 10 книг или учебных материалов",
+                  icon: "🏆",
+                  isUnlocked: downloads.length >= 10
+                },
+                {
+                  id: "quiz_master",
+                  name: "Гроза викторин",
+                  description: "Пройдено не менее 3 тестов или литературных викторин",
+                  icon: "⚡",
+                  isUnlocked: quizResults.length >= 3
+                },
+                {
+                  id: "straight_a",
+                  name: "Отличник учебы",
+                  description: "Средний балл по результатам тестирований от 85% и выше",
+                  icon: "🎓",
+                  isUnlocked: quizResults.length > 0 && Math.round(quizResults.reduce((acc, q) => acc + q.percentage, 0) / quizResults.length) >= 85
+                }
+              ].map((ach) => (
+                <div
+                  key={ach.id}
+                  className="glass"
+                  style={{
+                    padding: '20px',
+                    borderRadius: 'var(--radius-md)',
+                    background: ach.isUnlocked ? 'var(--bg-card)' : 'rgba(255,255,255,0.01)',
+                    border: ach.isUnlocked ? '1px solid var(--border-color)' : '1px solid rgba(255,255,255,0.03)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    opacity: ach.isUnlocked ? 1 : 0.45,
+                    transition: 'all 0.3s ease',
+                    boxShadow: ach.isUnlocked ? '0 4px 15px rgba(0,0,0,0.2)' : 'none',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {ach.isUnlocked && (
+                    <div style={{
+                      position: 'absolute',
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'var(--accent-glow)',
+                      filter: 'blur(30px)',
+                      top: '-10px',
+                      left: '-10px',
+                      pointerEvents: 'none',
+                      opacity: 0.8
+                    }}></div>
+                  )}
+
+                  <div style={{
+                    fontSize: '2.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: ach.isUnlocked ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: 'var(--radius-md)',
+                    flexShrink: 0,
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    zIndex: 2
+                  }}>
+                    {ach.icon}
+                  </div>
+
+                  <div style={{ flex: 1, zIndex: 2 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <h4 style={{
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        color: ach.isUnlocked ? 'var(--text-primary)' : 'var(--text-muted)'
+                      }}>
+                        {ach.name}
+                      </h4>
+                      {!ach.isUnlocked && (
+                        <Lock size={12} style={{ color: 'var(--text-muted)' }} />
+                      )}
+                    </div>
+                    <p style={{
+                      fontSize: '0.8rem',
+                      color: 'var(--text-muted)',
+                      marginTop: '4px',
+                      lineHeight: '1.4'
+                    }}>
+                      {ach.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
