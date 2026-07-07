@@ -331,6 +331,36 @@ const libraryAssets = [
     stock: 100
   },
   {
+    id: "f2",
+    name: "Роман: Война и мир",
+    space: "public",
+    category: "fiction",
+    author: "Л. Н. Толстой",
+    format: "EPUB / PDF",
+    size: "8.2 MB",
+    pages: 1200,
+    rating: 4.85,
+    image: "/images/russian_book_cover.png",
+    description: "Всемирно известный роман-эпопея Льва Толстого, описывающий русское общество в эпоху войн против Наполеона.",
+    specs: ["Раздел: Русская классика", "Эпопея", "Объем: 1200 страниц"],
+    stock: 100
+  },
+  {
+    id: "f3",
+    name: "Роман: Евгений Онегин",
+    space: "public",
+    category: "fiction",
+    author: "А. С. Пушкин",
+    format: "EPUB / MOBI",
+    size: "1.5 MB",
+    pages: 240,
+    rating: 4.92,
+    image: "/images/russian_book_cover.png",
+    description: "Роман в стихах Александра Сергеевича Пушкина, один из самых значительных шедевров русской поэзии и классической литературы.",
+    specs: ["Раздел: Поэзия / Классика", "Роман в стихах", "Объем: 240 страниц"],
+    stock: 100
+  },
+  {
     id: "a1",
     name: "Аудиокнига: Мастер и Маргарита (Озвучка актеров МХАТ)",
     space: "public",

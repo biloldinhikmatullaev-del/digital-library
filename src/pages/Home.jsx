@@ -7,6 +7,7 @@ import "./Home.css";
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [popularBooks, setPopularBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeSpace, setActiveSpace] = useState("educational");
 
@@ -33,10 +34,13 @@ export default function Home() {
             merged.find(p => p.id === "b_hist"),
             merged.find(p => p.id === "b_bio"),
             merged.find(p => p.id === "lit_quiz_1"),
-            merged.find(p => p.id === "b1"),
-            merged.find(p => p.id === "a1")
+            merged.find(p => p.id === "b1")
           ].filter(Boolean);
           setFeaturedProducts(featured.length > 0 ? featured : merged.slice(0, 6));
+
+          // Set popular classic fiction books
+          const books = merged.filter(p => p.space === "public" && (p.category === "fiction" || p.category === "audiobooks" || p.category === "ebooks")).slice(0, 4);
+          setPopularBooks(books);
         } else {
           throw new Error("API error");
         }
@@ -50,10 +54,12 @@ export default function Home() {
           mockProducts.find(p => p.id === "b_hist"),
           mockProducts.find(p => p.id === "b_bio"),
           mockProducts.find(p => p.id === "lit_quiz_1"),
-          mockProducts.find(p => p.id === "b1"),
-          mockProducts.find(p => p.id === "a1")
+          mockProducts.find(p => p.id === "b1")
         ].filter(Boolean);
         setFeaturedProducts(featured.length > 0 ? featured : mockProducts.slice(0, 6));
+
+        const books = mockProducts.filter(p => p.space === "public" && (p.category === "fiction" || p.category === "audiobooks" || p.category === "ebooks")).slice(0, 4);
+        setPopularBooks(books);
       } finally {
         setLoading(false);
       }
@@ -232,6 +238,26 @@ export default function Home() {
         ) : (
           <div className="products-grid">
             {featuredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Popular Books Section */}
+      <section className="featured container" style={{ marginTop: '60px' }}>
+        <div className="section-header">
+          <h2 className="section-title">Популярные книги</h2>
+          <p className="section-subtitle">Шедевры художественной литературы, аудиокниги и мировые бестселлеры.</p>
+        </div>
+
+        {loading ? (
+          <div className="loading-container">
+            <div className="loader"></div>
+          </div>
+        ) : (
+          <div className="products-grid">
+            {popularBooks.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
